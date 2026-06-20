@@ -1,0 +1,95 @@
+/* ───────────────────────────────────────────────────────────
+   Jetons de design — dérivés de DESIGN_SPEC.md
+   Direction : Album vivant (scrapbook) + géolocalisation en orbite.
+   ─────────────────────────────────────────────────────────── */
+:root {
+  /* Palette — terracotta & sable, chaud */
+  --sand-app: #f3eadd;
+  --paper-cream: #efe3d2;
+  --card: #fbf6ee;
+  --card-2: #fcfaf4;
+  --sand-deep: #ebdfcd;
+  --terracotta: #c4623f;
+  --terracotta-deep: #a24c32;
+  --ocre: #c99a4e;
+  --sage: #7e8a6a;
+  --ink: #2e2620;
+  --text-soft: #6b5d4f;
+  --text-meta: #9a8c7c;
+  --border: #d8c7b2;
+  --border-2: #e3d2b6;
+
+  /* Statuts géolocalisation */
+  --status-home: var(--sage); /* à la maison / proche */
+  --status-away: var(--terracotta); /* en déplacement */
+  --status-away-deep: var(--terracotta-deep);
+
+  /* Rayons */
+  --r-card: 22px;
+  --r-ticket: 13px;
+  --r-pill: 11px;
+  --r-polaroid: 2px;
+  --r-avatar: 50%;
+
+  /* Ombres — chaudes, jamais noir pur */
+  --sh-card: 0 1px 3px rgba(46, 38, 32, 0.05), 0 10px 26px rgba(46, 38, 32, 0.05);
+  --sh-polaroid: 0 6px 20px rgba(46, 38, 32, 0.16);
+  --sh-geo: 0 0 0 7px rgba(196, 98, 63, 0.12), 0 8px 22px rgba(162, 76, 50, 0.3);
+  --sh-sheet: 0 -8px 40px rgba(46, 38, 32, 0.18);
+
+  /* Typographie */
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Gabarit */
+  --frame-max: 430px;
+  --tabbar-h: 64px;
+}
+
+/* ── Animations sobres ───────────────────────────────────── */
+@keyframes fam-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fam-orbit-rev {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@keyframes fam-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0.35;
+  }
+}
+@keyframes fam-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes fam-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

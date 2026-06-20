@@ -1,0 +1,84 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+  animation: fam-rise 0.35s ease both;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.date {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+.title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.1;
+  margin-top: 3px;
+  color: var(--ink);
+}
+.gear {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+  box-shadow: var(--sh-card);
+  flex: none;
+}
+
+.compose {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+  box-shadow: var(--sh-card);
+}
+.composeAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sand-deep);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  flex: none;
+}
+.composeText {
+  flex: 1;
+  text-align: left;
+  color: var(--text-meta);
+  font-size: 14px;
+}
+.compose svg {
+  color: var(--terracotta);
+}
+
+.block {
+  padding: 0 16px;
+}
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px 8px;
+}

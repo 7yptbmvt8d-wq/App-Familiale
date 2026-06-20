@@ -1,0 +1,91 @@
+.hub {
+  position: relative;
+  width: min(320px, 84%);
+  aspect-ratio: 1;
+  margin: 16px auto 8px;
+}
+
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(138, 106, 79, 0.45);
+  transform: translate(-50%, -50%);
+}
+.ring1 {
+  width: 100%;
+  height: 100%;
+  animation: fam-orbit 60s linear infinite;
+}
+.ring2 {
+  width: 71%;
+  height: 71%;
+  border-style: dotted;
+  opacity: 0.85;
+  animation: fam-orbit-rev 46s linear infinite;
+}
+.ring3 {
+  width: 44%;
+  height: 44%;
+  opacity: 0.6;
+  animation: fam-orbit 38s linear infinite;
+}
+
+.medallion {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 31%;
+  height: 31%;
+  border-radius: 50%;
+  background: radial-gradient(120% 120% at 32% 26%, #d4774f, #b6512f 58%, #9c4329);
+  color: var(--card-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  box-shadow: var(--sh-geo);
+  z-index: 3;
+}
+.medallion span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.medallion small {
+  font-size: 9px;
+  opacity: 0.85;
+}
+
+.sat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 64px;
+  z-index: 4;
+}
+.satName {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.satDist {
+  font-size: 9px;
+  color: var(--sage);
+}
+.away {
+  color: var(--terracotta-deep);
+}
+.sel .satName {
+  color: var(--terracotta-deep);
+}
+.sel {
+  filter: drop-shadow(0 4px 10px rgba(162, 76, 50, 0.3));
+}

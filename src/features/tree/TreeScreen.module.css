@@ -1,0 +1,83 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+  animation: fam-rise 0.35s ease both;
+}
+.header {
+  padding: 0 16px 8px;
+}
+.title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sub {
+  font-size: 13px;
+  color: var(--text-meta);
+  margin-top: 2px;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px 16px;
+}
+.gen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.genLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.connector {
+  width: 1.5px;
+  height: 14px;
+  background: repeating-linear-gradient(var(--border) 0 3px, transparent 3px 6px);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.fiche {
+  width: 92px;
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+  box-shadow: var(--sh-card);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.fiche figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.fiche strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fiche span {
+  font-size: 10.5px;
+  color: var(--text-soft);
+}
+.fiche small {
+  font-size: 10px;
+  color: var(--text-meta);
+  font-family: var(--mono);
+}

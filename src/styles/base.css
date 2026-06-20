@@ -1,0 +1,80 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  /* teinte chaude derrière le "téléphone" pour la prévisualisation desktop */
+  background:
+    radial-gradient(120% 80% at 50% 0%, #e7d8c2 0%, #ddccb2 55%, #d3c1a4 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Scrollbar discrète et chaude */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Surtitres / overlines */
+.overline {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--text-meta);
+}
+
+::selection {
+  background: rgba(196, 98, 63, 0.22);
+}

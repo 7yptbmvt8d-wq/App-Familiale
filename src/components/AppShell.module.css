@@ -1,0 +1,29 @@
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: var(--frame-max);
+  height: 100dvh;
+  background: var(--sand-app);
+  overflow: hidden;
+}
+
+.content {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
+}
+
+@media (min-width: 480px) {
+  .frame {
+    height: min(880px, calc(100dvh - 48px));
+    margin: 24px 0;
+    border-radius: 46px;
+    box-shadow:
+      0 40px 90px rgba(46, 38, 32, 0.45),
+      0 0 0 11px #241e1a,
+      0 0 0 12px #463b32;
+  }
+}

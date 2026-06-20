@@ -1,0 +1,133 @@
+.screen {
+  width: 100%;
+  max-width: var(--frame-max);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 8vh) 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: var(--sand-app);
+}
+
+.brand {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: radial-gradient(120% 120% at 32% 26%, #d4774f, #b6512f 58%, #9c4329);
+  color: var(--card-2);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--sh-geo);
+}
+.title {
+  font-family: var(--serif);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.tag {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text-soft);
+  max-width: 260px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-card);
+  box-shadow: var(--sh-card);
+  padding: 20px;
+}
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  margin: 14px 2px 6px;
+}
+.label:first-child {
+  margin-top: 0;
+}
+.input {
+  width: 100%;
+  background: var(--sand-app);
+  border: 1px solid var(--border-2);
+  border-radius: 13px;
+  padding: 13px 14px;
+  font-size: 15px;
+  outline: none;
+  color: var(--ink);
+}
+.input:focus {
+  border-color: var(--terracotta);
+}
+.error {
+  color: var(--terracotta-deep);
+  font-size: 13px;
+  margin-top: 12px;
+}
+.join {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 15px;
+  background: var(--terracotta);
+  color: var(--card-2);
+  font-size: 15px;
+  font-weight: 700;
+}
+.join:disabled {
+  opacity: 0.45;
+}
+
+.codes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-meta);
+}
+.codes code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--terracotta-deep);
+  background: rgba(196, 98, 63, 0.1);
+  padding: 4px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.demo {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.demoBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.demoBtns button {
+  padding: 13px;
+  border-radius: 13px;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+}

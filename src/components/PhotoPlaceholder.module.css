@@ -1,0 +1,26 @@
+.ph {
+  position: relative;
+  width: 100%;
+  border-radius: 2px;
+  background-color: var(--sand-deep);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(46, 38, 32, 0.055) 0 10px,
+    rgba(46, 38, 32, 0.012) 10px 20px
+  );
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.cap {
+  position: absolute;
+  left: 8px;
+  bottom: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: var(--text-soft);
+  background: rgba(251, 246, 238, 0.82);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
