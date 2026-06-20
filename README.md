@@ -32,11 +32,14 @@ npm run dev          # http://localhost:5173  (backend mock par défaut)
 ### Scripts
 
 ```bash
-npm run dev        # serveur de dev
-npm run build      # build de production (dossier dist/)
-npm run preview    # sert le build
-npm run typecheck  # tsc --noEmit
-npm run e2e        # parcours navigateur réel (Playwright) + captures dans e2e/shots/
+npm run dev          # serveur de dev
+npm run build        # build de production (dossier dist/)
+npm run preview      # sert le build
+npm run typecheck    # tsc --noEmit
+npm run e2e          # parcours navigateur réel (Playwright) + captures e2e/shots/
+npm run emulators    # Firebase Emulator Suite (Auth/Firestore/Storage) + UI :4000
+npm run seed:emulator # injecte la famille de démo dans l'émulateur
+npm run e2e:firebase # vérif Firebase de bout en bout sur émulateur (build + parcours)
 ```
 
 > `npm run e2e` télécharge Chromium au premier lancement (`npx playwright install chromium`).
@@ -94,6 +97,27 @@ Périmètre de cette itération : **MVP fonctionnel** (Auth sur invitation + Car
 
 ## Passer en backend Google (Firebase)
 
+### Essayer sans projet ni clé — Emulator Suite
+
+La **Firebase Emulator Suite** (Auth + Firestore + Storage) tourne en local, sans
+projet réel. Nécessite **Java** (déjà requis par les émulateurs Firestore/Storage).
+
+```bash
+# Vérification complète automatisée (seed → build → parcours navigateur)
+npm run e2e:firebase
+
+# … ou en manuel, dans deux terminaux :
+npm run emulators        # démarre les émulateurs (UI sur http://localhost:4000)
+npm run seed:emulator    # injecte la famille de démo
+# puis, avec un .env contenant VITE_BACKEND=firebase et VITE_FIREBASE_EMULATOR=true :
+npm run dev
+```
+
+> `src/backend/firebase/app.ts` se connecte automatiquement aux émulateurs quand
+> `VITE_FIREBASE_EMULATOR=true` (ports 9099 / 8080 / 9199).
+
+### Déploiement en production
+
 1. Créer un projet Firebase (**région UE**, ex. `eur3`, pour le RGPD).
 2. Activer **Authentication** (connexion anonyme), **Firestore**, **Storage**.
 3. Copier la config Web :
@@ -114,13 +138,18 @@ Périmètre de cette itération : **MVP fonctionnel** (Auth sur invitation + Car
 ### Modèle de données Firestore
 
 ```
-users/{uid}                      → { familyId, memberId }
-families/{fid}                   → { name, geofences[] }
-families/{fid}/members/{uid}     → Member (rôle, partage…)
-families/{fid}/locations/{uid}   → Location (maj par l'app mobile)
-families/{fid}/posts/{pid}       → Post (fil)
-families/{fid}/invitations/{iid} → Invitation
+users/{uid}                    → { familyId, memberId }
+families/{fid}                  → { name, geofences[] }
+families/{fid}/members/{uid}    → Member (rôle, partage…)
+families/{fid}/locations/{uid}  → Location (maj par l'app mobile)
+families/{fid}/posts/{pid}      → Post (fil)
+inviteCodes/{CODE}             → Invitation (racine ; id = code)
 ```
+
+> Les invitations sont une **collection racine** (`inviteCodes`, id = code) : un nouvel
+> arrivant peut lire *son* code pour le valider, sans pouvoir lister les invitations des
+> autres familles. L'onboarding crée `users/{uid}` **avant** la fiche membre (les règles
+> en dépendent).
 
 Les [`firestore.rules`](firestore.rules) imposent : accès **sur invitation**, isolation
 par famille, et **partage de localisation non désactivable pour les mineurs** (un mineur
@@ -145,11 +174,14 @@ animations `fam-orbit`/`fam-pulse`) sont dans `src/styles/tokens.css`, dérivés
 - `npm run build` → OK (build de production, 90 modules)
 - `npm run e2e` → parcours complet (connexion → 5 onglets → publication → verrou
   mineur) dans un navigateur réel : **0 erreur applicative**.
+- `npm run e2e:firebase` → backend **Firebase** sur émulateur (Auth anonyme,
+  écritures/lectures Firestore, temps réel `onSnapshot`, règles de sécurité) :
+  rejoindre via code → carte → publication : **0 erreur applicative**.
 
 ## Limites connues / prochaines étapes
 
-- Le mode `firebase` est **écrit et typé** mais non exécuté dans cet environnement
-  (aucun projet/clé) : à valider sur un vrai projet Firebase.
+- Le mode `firebase` est **vérifié sur la Emulator Suite** ; pour la prod, le brancher
+  sur un vrai projet Firebase (région UE) et déployer `firestore.rules` + `storage.rules`.
 - Pas d'upload de vraies photos en mode mock (placeholders monospace) ; l'upload
   Storage est implémenté côté `firebase`.
 - Carte Google Maps, notifications push (FCM), coffre documentaire, capsules vidéo,

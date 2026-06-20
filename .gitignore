@@ -2,7 +2,13 @@ node_modules
 dist
 dist-ssr
 e2e/shots
+e2e/shots-firebase
 *.local
+
+# firebase emulators
+.firebase/
+*-debug.log
+firebase-export-*
 .env
 .env.*
 !.env.example

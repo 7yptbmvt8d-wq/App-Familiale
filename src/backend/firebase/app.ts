@@ -1,7 +1,9 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth';
+import { connectFirestoreEmulator, initializeFirestore, type Firestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
+
+const useEmulator = import.meta.env.VITE_FIREBASE_EMULATOR === 'true';
 
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,18 +14,38 @@ const config = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | null = null;
+let _app: FirebaseApp | null = null;
+let _auth!: Auth;
+let _db!: Firestore;
+let _storage!: FirebaseStorage;
 
-export function firebaseApp(): FirebaseApp {
-  if (!config.apiKey || !config.projectId) {
-    throw new Error(
-      'Configuration Firebase manquante : renseignez les variables VITE_FIREBASE_* dans votre .env',
-    );
+function ensure() {
+  if (_app) return;
+  if (!useEmulator && (!config.apiKey || !config.projectId)) {
+    throw new Error('Configuration Firebase manquante : renseignez les variables VITE_FIREBASE_* dans votre .env');
   }
-  if (!app) app = initializeApp(config as Record<string, string>);
-  return app;
+  _app = initializeApp(config as Record<string, string>);
+  _auth = getAuth(_app);
+  // ignoreUndefinedProperties : Firestore rejette les champs `undefined`.
+  _db = initializeFirestore(_app, { ignoreUndefinedProperties: true });
+  _storage = getStorage(_app);
+
+  if (useEmulator) {
+    connectAuthEmulator(_auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(_db, '127.0.0.1', 8080);
+    connectStorageEmulator(_storage, '127.0.0.1', 9199);
+  }
 }
 
-export const db = (): Firestore => getFirestore(firebaseApp());
-export const auth = (): Auth => getAuth(firebaseApp());
-export const storage = (): FirebaseStorage => getStorage(firebaseApp());
+export const auth = (): Auth => {
+  ensure();
+  return _auth;
+};
+export const db = (): Firestore => {
+  ensure();
+  return _db;
+};
+export const storage = (): FirebaseStorage => {
+  ensure();
+  return _storage;
+};

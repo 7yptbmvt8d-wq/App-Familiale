@@ -8,11 +8,10 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
-  collectionGroup,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  limit,
   onSnapshot,
   orderBy,
   query,
@@ -49,7 +48,7 @@ import { auth, db, storage } from './app';
  *   families/{fid}/members/{uid}        → Member
  *   families/{fid}/locations/{uid}      → Location (mise à jour par l'app mobile)
  *   families/{fid}/posts/{pid}          → Post
- *   families/{fid}/invitations/{iid}    → Invitation
+ *   inviteCodes/{CODE}                  → Invitation (racine ; id = code)
  *
  * Auth : connexion anonyme (Firebase Auth) liée à un membre via le code d'invitation.
  * Les règles de sécurité (firestore.rules) imposent l'invitation et le partage
@@ -120,21 +119,21 @@ export class FirebaseBackend implements Backend {
   async joinWithCode(code: string, profile: NewProfile): Promise<Session> {
     const cred = await signInAnonymously(auth());
     const uid = cred.user.uid;
+    const codeUp = code.trim().toUpperCase();
 
-    const q = query(
-      collectionGroup(db(), 'invitations'),
-      where('code', '==', code.trim().toUpperCase()),
-      where('status', '==', 'pending'),
-      limit(1),
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) throw new Error('Code d’invitation invalide ou déjà utilisé.');
-
-    const inviteDoc = snap.docs[0];
-    const invite = inviteDoc.data() as Invitation;
+    // 1. Lire le code (autorisé à tout utilisateur authentifié).
+    const inviteSnap = await getDoc(doc(db(), 'inviteCodes', codeUp));
+    const invite = inviteSnap.data() as Invitation | undefined;
+    if (!inviteSnap.exists() || !invite || invite.status !== 'pending') {
+      throw new Error('Code d’invitation invalide ou déjà utilisé.');
+    }
     const familyId = invite.familyId;
     const role: Role = invite.role;
 
+    // 2. Créer l'index users/{uid} AVANT la fiche membre (les règles en dépendent).
+    await setDoc(doc(db(), 'users', uid), { familyId, memberId: uid });
+
+    // 3. Créer sa propre fiche membre.
     const member: Member = {
       id: uid,
       familyId,
@@ -146,10 +145,10 @@ export class FirebaseBackend implements Backend {
       initials: profile.name.trim().slice(0, 2),
       sharing: role === 'minor' ? 'auto' : 'optin',
     };
-
     await setDoc(doc(db(), 'families', familyId, 'members', uid), member);
-    await setDoc(doc(db(), 'users', uid), { familyId, memberId: uid });
-    await updateDoc(inviteDoc.ref, { status: 'accepted' });
+
+    // 4. Marquer le code comme utilisé.
+    await updateDoc(doc(db(), 'inviteCodes', codeUp), { status: 'accepted' });
 
     this.ctx = { familyId, memberId: uid };
     const family = await this.loadFamily(familyId);
@@ -180,31 +179,31 @@ export class FirebaseBackend implements Backend {
   /* ── Invitations ─────────────────────────────────────────── */
   async listInvitations(): Promise<Invitation[]> {
     const { familyId } = await this.resolveCtx();
-    const snap = await getDocs(
-      query(collection(db(), 'families', familyId, 'invitations'), orderBy('createdAt', 'desc')),
-    );
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Invitation, 'id'>) }));
+    const snap = await getDocs(query(collection(db(), 'inviteCodes'), where('familyId', '==', familyId)));
+    return snap.docs
+      .map((d) => ({ id: d.id, ...(d.data() as Omit<Invitation, 'id'>) }))
+      .sort((a, b) => b.createdAt - a.createdAt);
   }
 
   async createInvitation(input: { role: Role; label?: string }): Promise<Invitation> {
     const { familyId, memberId } = await this.resolveCtx();
-    const inv: Omit<Invitation, 'id'> = {
+    const code = `LACROIX-${Math.floor(1000 + Math.random() * 9000)}`;
+    const inv: Invitation = {
+      id: code,
       familyId,
-      code: `LACROIX-${Math.floor(1000 + Math.random() * 9000)}`,
+      code,
       role: input.role,
       label: input.label,
       createdBy: memberId,
       createdAt: Date.now(),
       status: 'pending',
     };
-    const ref = doc(collection(db(), 'families', familyId, 'invitations'));
-    await setDoc(ref, inv);
-    return { id: ref.id, ...inv };
+    await setDoc(doc(db(), 'inviteCodes', code), inv);
+    return inv;
   }
 
   async revokeInvitation(id: string): Promise<void> {
-    const { familyId } = await this.resolveCtx();
-    await updateDoc(doc(db(), 'families', familyId, 'invitations', id), { status: 'accepted' });
+    await deleteDoc(doc(db(), 'inviteCodes', id));
   }
 
   /* ── Localisation temps réel ─────────────────────────────── */
