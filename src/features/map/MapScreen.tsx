@@ -15,6 +15,8 @@ export function MapScreen() {
   const [selected, setSelected] = useState<string | undefined>();
 
   const ordered = useMemo(() => [...live].sort((a, b) => rank(a.status) - rank(b.status)), [live]);
+  // ordre stable (par id) pour l'orbite : évite que les satellites se téléportent.
+  const stable = useMemo(() => [...live].sort((a, b) => a.id.localeCompare(b.id)), [live]);
   const incoming = useMemo(
     () => live.filter((m) => m.etaMinutes != null).sort((a, b) => a.etaMinutes! - b.etaMinutes!),
     [live],
@@ -54,7 +56,7 @@ export function MapScreen() {
         )}
       </div>
 
-      <OrbitHub members={ordered} homeCount={homeCount} onSelect={setSelected} selectedId={selected} />
+      <OrbitHub members={stable} homeCount={homeCount} onSelect={setSelected} selectedId={selected} />
 
       <div className={styles.fences}>
         {fences.map((f) => (

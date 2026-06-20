@@ -128,6 +128,13 @@ export class MockBackend implements Backend {
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
 
+  dispose() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.liveSubs.clear();
+    this.feedSubs.clear();
+  }
+
   private tick() {
     const dt = TICK_MS / 1000;
     for (const m of this.members) {

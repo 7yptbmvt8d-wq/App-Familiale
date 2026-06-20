@@ -319,4 +319,10 @@ export class FirebaseBackend implements Backend {
       }),
     });
   }
+
+  dispose() {
+    // Les écouteurs onSnapshot sont libérés par les fonctions de désabonnement
+    // renvoyées par subscribeLive / subscribeFeed.
+    this.ctx = null;
+  }
 }

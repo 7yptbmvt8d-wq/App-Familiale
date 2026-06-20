@@ -36,7 +36,12 @@ npm run dev        # serveur de dev
 npm run build      # build de production (dossier dist/)
 npm run preview    # sert le build
 npm run typecheck  # tsc --noEmit
+npm run e2e        # parcours navigateur réel (Playwright) + captures dans e2e/shots/
 ```
+
+> `npm run e2e` télécharge Chromium au premier lancement (`npx playwright install chromium`).
+> Les polices (Google Fonts) sont chargées via CDN avec repli sur les polices système
+> si le réseau est indisponible.
 
 ---
 
@@ -137,9 +142,9 @@ animations `fam-orbit`/`fam-pulse`) sont dans `src/styles/tokens.css`, dérivés
 ## Vérification
 
 - `npm run typecheck` → OK
-- `npm run build` → OK (build de production)
-- Tests fonctionnels du cœur métier (rôles, verrou mineur, géo, ETA, simulation,
-  fil) : 18 assertions passantes (cf. historique de développement).
+- `npm run build` → OK (build de production, 90 modules)
+- `npm run e2e` → parcours complet (connexion → 5 onglets → publication → verrou
+  mineur) dans un navigateur réel : **0 erreur applicative**.
 
 ## Limites connues / prochaines étapes
 

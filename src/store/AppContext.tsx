@@ -56,9 +56,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Création du backend + reprise de session.
   useEffect(() => {
     let alive = true;
+    let created: Backend | null = null;
     (async () => {
       const b = await createBackend();
-      if (!alive) return;
+      if (!alive) {
+        b.dispose();
+        return;
+      }
+      created = b;
       backendRef.current = b;
       try {
         const s = await b.getSession();
@@ -76,6 +81,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })();
     return () => {
       alive = false;
+      created?.dispose();
     };
   }, []);
 

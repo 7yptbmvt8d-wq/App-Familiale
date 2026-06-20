@@ -152,4 +152,7 @@ export interface Backend {
   createPost(input: CreatePostInput): Promise<void>;
   toggleFavorite(postId: string): Promise<void>;
   addComment(postId: string, text: string): Promise<void>;
+
+  /** Libère les ressources (timers, écouteurs). */
+  dispose(): void;
 }

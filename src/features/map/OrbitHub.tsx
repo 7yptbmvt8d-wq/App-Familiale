@@ -11,9 +11,9 @@ function shortDist(m: LiveMember): string {
 }
 
 function radiusFactor(m: LiveMember): number {
-  if (m.status === 'home') return 0.27;
-  if (m.status === 'nearby') return 0.37;
-  return 0.46;
+  if (m.status === 'unknown') return 0.47;
+  // distance réelle → rayon continu : proche au centre, loin au bord.
+  return 0.24 + 0.23 * Math.min(1, m.distanceMeters / 2500);
 }
 
 export function OrbitHub({
