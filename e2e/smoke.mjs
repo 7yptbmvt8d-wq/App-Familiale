@@ -46,7 +46,7 @@ await waitForServer();
 
 const errors = [];
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
+const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });
 const page = await ctx.newPage();
 page.on('console', (m) => {
   if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
@@ -103,7 +103,7 @@ try {
   await shot('08-event');
 
   // Créer une nouvelle famille (contexte vierge → écran de connexion)
-  const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
+  const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });
   const p2 = await ctx2.newPage();
   p2.on('console', (m) => {
     if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
@@ -116,6 +116,12 @@ try {
   await p2.getByRole('button', { name: 'Créer ma famille' }).last().click(); // valider
   await p2.getByText('Bonjour Alex').waitFor({ timeout: 8000 });
   await p2.screenshot({ path: `${OUT}09-create-family.png` });
+
+  // Définir la Maison via la position GPS (le carton de configuration disparaît ensuite)
+  await p2.getByRole('button', { name: 'Carte' }).click();
+  await p2.getByRole('button', { name: /Définis ta Maison/ }).click();
+  await p2.getByRole('button', { name: /Définis ta Maison/ }).waitFor({ state: 'detached', timeout: 8000 });
+  await p2.screenshot({ path: `${OUT}10-set-home.png` });
   await ctx2.close();
 
   console.log(`\nParcours OK — ${errors.length} erreur(s) applicative(s).`);

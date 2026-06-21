@@ -11,6 +11,7 @@ import { BACKEND_KIND, createBackend } from '../backend';
 import type {
   Backend,
   CreatePostInput,
+  GeofenceKind,
   Invitation,
   LiveMember,
   Member,
@@ -36,6 +37,7 @@ interface AppValue {
   demoSignIn: (memberId: string) => Promise<void>;
   signOut: () => Promise<void>;
   setSharing: (mode: SharingMode) => Promise<void>;
+  upsertGeofence: (input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }) => Promise<void>;
   createPost: (input: CreatePostInput) => Promise<void>;
   toggleFavorite: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
@@ -104,6 +106,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [sessionMemberId]);
 
+  // Partage de position (GPS du navigateur) tant que l'app est ouverte et le partage actif.
+  const mySharing = session?.member.sharing;
+  useEffect(() => {
+    if (!sessionMemberId || !mySharing || mySharing === 'off') return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    let last = 0;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - last < 20000) return; // au plus une écriture / 20 s
+        last = now;
+        const { latitude, longitude, speed } = pos.coords;
+        backendRef.current
+          ?.updateLocation({
+            lat: latitude,
+            lng: longitude,
+            speed: speed != null && speed >= 0 ? speed * 3.6 : undefined,
+          })
+          .catch(() => {});
+      },
+      () => {
+        /* permission refusée / indisponible : on ignore */
+      },
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [sessionMemberId, mySharing]);
+
   const memberById = useCallback(
     (id: string): Member | undefined => live.find((m) => m.id === id) ?? members.find((m) => m.id === id),
     [live, members],
@@ -136,6 +166,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [session?.member],
   );
 
+  const upsertGeofence = useCallback(
+    async (input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }) => {
+      await backendRef.current!.upsertGeofence(input);
+      setSession((prev) => {
+        if (!prev) return prev;
+        const others = prev.family.geofences.filter((g) => g.kind !== input.kind);
+        const gf = { id: `gf-${input.kind}`, ...input, radius: input.radius ?? 120 };
+        return { ...prev, family: { ...prev.family, geofences: [...others, gf] } };
+      });
+    },
+    [],
+  );
+
   const createPost = useCallback((input: CreatePostInput) => backendRef.current!.createPost(input), []);
   const toggleFavorite = useCallback((postId: string) => backendRef.current!.toggleFavorite(postId), []);
   const addComment = useCallback((postId: string, text: string) => backendRef.current!.addComment(postId, text), []);
@@ -160,6 +203,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     demoSignIn,
     signOut,
     setSharing,
+    upsertGeofence,
     createPost,
     toggleFavorite,
     addComment,

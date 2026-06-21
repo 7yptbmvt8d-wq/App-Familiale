@@ -145,6 +145,10 @@ export interface Backend {
   /* Localisation temps réel */
   subscribeLive(cb: (members: LiveMember[]) => void): () => void;
   setSharing(memberId: string, mode: SharingMode): Promise<void>;
+  /** Écrit ma position (GPS du navigateur, app au premier plan). */
+  updateLocation(input: { lat: number; lng: number; speed?: number; battery?: number }): Promise<void>;
+  /** Définit / met à jour un lieu de la famille (responsable). */
+  upsertGeofence(input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }): Promise<void>;
 
   /* Fil de souvenirs & événements */
   subscribeFeed(cb: (posts: Post[]) => void): () => void;

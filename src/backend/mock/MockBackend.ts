@@ -3,6 +3,7 @@ import type {
   Backend,
   CreatePostInput,
   Family,
+  GeofenceKind,
   Invitation,
   LiveMember,
   Location,
@@ -359,6 +360,30 @@ export class MockBackend implements Backend {
       throw new Error('Le partage de localisation est obligatoire pour un compte mineur.');
     }
     m.sharing = mode;
+    this.save();
+    this.emitLive();
+  }
+
+  async updateLocation({ lat, lng, speed, battery }: { lat: number; lng: number; speed?: number; battery?: number }): Promise<void> {
+    const me = this.requireMember();
+    this.locations[me.id] = {
+      memberId: me.id,
+      lat,
+      lng,
+      speed: speed ?? 0,
+      battery: battery ?? this.locations[me.id]?.battery ?? 0.8,
+      updatedAt: Date.now(),
+    };
+    // Ancre la simulation sur la vraie position pour qu'elle ne dérive pas.
+    this.sim[me.id] = { mode: 'home', anchor: { lat, lng }, battery: battery ?? 0.8 };
+    this.emitLive();
+  }
+
+  async upsertGeofence({ kind, label, lat, lng, radius }: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }): Promise<void> {
+    const me = this.requireMember();
+    if (me.role !== 'admin') throw new Error('Seul un responsable peut définir les lieux.');
+    const gf = { id: `gf-${kind}`, kind, label, lat, lng, radius: radius ?? 120 };
+    this.family.geofences = [...this.family.geofences.filter((g) => g.kind !== kind), gf];
     this.save();
     this.emitLive();
   }

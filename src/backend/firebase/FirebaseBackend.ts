@@ -27,6 +27,7 @@ import type {
   CreatePostInput,
   Family,
   Geofence,
+  GeofenceKind,
   Invitation,
   LiveMember,
   Location,
@@ -276,6 +277,26 @@ export class FirebaseBackend implements Backend {
       throw new Error('Le partage de localisation est obligatoire pour un compte mineur.');
     }
     await updateDoc(doc(db(), 'families', familyId, 'members', memberId), { sharing: mode });
+  }
+
+  async updateLocation({ lat, lng, speed, battery }: { lat: number; lng: number; speed?: number; battery?: number }): Promise<void> {
+    const { familyId, memberId } = await this.resolveCtx();
+    await setDoc(doc(db(), 'families', familyId, 'locations', memberId), {
+      memberId,
+      lat,
+      lng,
+      speed: speed ?? 0,
+      battery,
+      updatedAt: Date.now(),
+    });
+  }
+
+  async upsertGeofence({ kind, label, lat, lng, radius }: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }): Promise<void> {
+    const { familyId } = await this.resolveCtx();
+    const fam = await this.loadFamily(familyId);
+    const gf: Geofence = { id: `gf-${kind}`, kind, label, lat, lng, radius: radius ?? 120 };
+    const geofences = [...fam.geofences.filter((g) => g.kind !== kind), gf];
+    await updateDoc(doc(db(), 'families', familyId), { geofences });
   }
 
   /* ── Fil de souvenirs & événements ───────────────────────── */
