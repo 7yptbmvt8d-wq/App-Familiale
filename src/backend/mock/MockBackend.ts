@@ -8,6 +8,7 @@ import type {
   Post,
   Role,
   Session,
+  UpdatePostInput,
 } from '../types';
 import { FAMILY, SEED_INVITATIONS, SEED_MEMBERS, SEED_POSTS } from './data';
 
@@ -236,6 +237,20 @@ export class MockBackend implements Backend {
     this.emitFeed();
   }
 
+  async updatePost(postId: string, patch: UpdatePostInput): Promise<void> {
+    const me = this.requireMember();
+    const post = this.posts.find((p) => p.id === postId);
+    if (!post) return;
+    if (post.authorId !== me.id) throw new Error('Seul l’auteur peut modifier sa publication.');
+    if (patch.text !== undefined) post.text = patch.text.trim() || undefined;
+    if (patch.caption !== undefined) post.caption = patch.caption.trim() || undefined;
+    if (patch.memoryDate !== undefined) post.memoryDate = patch.memoryDate || undefined;
+    if (patch.eventDate !== undefined) post.eventDate = patch.eventDate || undefined;
+    if (patch.eventLocation !== undefined) post.eventLocation = patch.eventLocation.trim() || undefined;
+    this.save();
+    this.emitFeed();
+  }
+
   async toggleFavorite(postId: string): Promise<void> {
     const me = this.requireMember();
     const post = this.posts.find((p) => p.id === postId);
@@ -266,5 +281,14 @@ export class MockBackend implements Backend {
     this.posts = this.posts.filter((p) => p.id !== postId);
     this.save();
     this.emitFeed();
+  }
+
+  /* ── Notifications push (sans effet en démo locale) ──────── */
+  async savePushToken(): Promise<void> {
+    /* Le mock n'envoie pas de push ; no-op. */
+  }
+
+  async deletePushToken(): Promise<void> {
+    /* no-op */
   }
 }

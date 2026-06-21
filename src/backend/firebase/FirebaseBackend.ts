@@ -31,6 +31,7 @@ import type {
   Post,
   Role,
   Session,
+  UpdatePostInput,
 } from '../types';
 import { auth, db, storage } from './app';
 
@@ -272,6 +273,17 @@ export class FirebaseBackend implements Backend {
     await setDoc(ref, post);
   }
 
+  async updatePost(postId: string, patch: UpdatePostInput): Promise<void> {
+    const { familyId } = await this.resolveCtx();
+    const data: Record<string, unknown> = {};
+    if (patch.text !== undefined) data.text = patch.text.trim();
+    if (patch.caption !== undefined) data.caption = patch.caption.trim();
+    if (patch.memoryDate !== undefined) data.memoryDate = patch.memoryDate;
+    if (patch.eventDate !== undefined) data.eventDate = patch.eventDate;
+    if (patch.eventLocation !== undefined) data.eventLocation = patch.eventLocation.trim();
+    if (Object.keys(data).length) await updateDoc(doc(db(), 'families', familyId, 'posts', postId), data);
+  }
+
   async toggleFavorite(postId: string): Promise<void> {
     const { familyId, memberId } = await this.resolveCtx();
     const ref = doc(db(), 'families', familyId, 'posts', postId);
@@ -298,6 +310,20 @@ export class FirebaseBackend implements Backend {
   async deletePost(postId: string): Promise<void> {
     const { familyId } = await this.resolveCtx();
     await deleteDoc(doc(db(), 'families', familyId, 'posts', postId));
+  }
+
+  /* ── Notifications push (FCM) ────────────────────────────── */
+  async savePushToken(token: string): Promise<void> {
+    const user = await this.currentUser();
+    if (!user) return;
+    // Jetons d'appareil stockés dans users/{uid} (lisible par soi uniquement).
+    await setDoc(doc(db(), 'users', user.uid), { fcmTokens: arrayUnion(token) }, { merge: true });
+  }
+
+  async deletePushToken(token: string): Promise<void> {
+    const user = await this.currentUser();
+    if (!user) return;
+    await updateDoc(doc(db(), 'users', user.uid), { fcmTokens: arrayRemove(token) });
   }
 
   dispose() {

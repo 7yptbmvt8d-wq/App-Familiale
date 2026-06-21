@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "demo-famille"
+    "default": "demo-famille",
+    "prod": "app-famille-bd0ae"
   }
 }

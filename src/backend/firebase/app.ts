@@ -37,6 +37,10 @@ function ensure() {
   }
 }
 
+export const firebaseApp = (): FirebaseApp => {
+  ensure();
+  return _app!;
+};
 export const auth = (): Auth => {
   ensure();
   return _auth;

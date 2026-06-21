@@ -32,6 +32,10 @@ jobs:
       VITE_FIREBASE_STORAGE_BUCKET: app-famille-bd0ae.firebasestorage.app
       VITE_FIREBASE_MESSAGING_SENDER_ID: "638754135304"
       VITE_FIREBASE_APP_ID: "1:638754135304:web:16ba36478ec134ffb620bd"
+      # Clé VAPID (Web Push) — à créer dans Firebase Console puis à ajouter en
+      # secret de dépôt « FCM_VAPID_KEY ». Sans elle, les notifications restent
+      # désactivées (le reste de l'app fonctionne normalement).
+      VITE_FIREBASE_VAPID_KEY: ${{ secrets.FCM_VAPID_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -109,12 +109,21 @@ try {
   await page.getByText('Cousine').first().waitFor({ timeout: 10000 });
   await shot('06b-edit-membre');
 
-  // Supprimer son propre post → deleteDoc posts/{id} sous la règle « auteur »
+  // Modifier sa propre publication → updateDoc posts/{id} (revient via onSnapshot)
   await page.getByRole('button', { name: 'Fil' }).click();
   const fbPost = page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first();
-  await fbPost.getByRole('button', { name: 'Supprimer' }).click();
-  await fbPost.waitFor({ state: 'detached', timeout: 10000 });
-  await shot('06c-delete');
+  await fbPost.getByRole('button', { name: 'Modifier' }).click();
+  await page.getByText('Modifier la publication').waitFor({ timeout: 10000 });
+  await page.locator('textarea').fill('Bonjour depuis Firestore — modifié.');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.locator('article').filter({ hasText: 'modifié' }).first().waitFor({ timeout: 10000 });
+  await shot('06c-edit-post');
+
+  // Supprimer son propre post → deleteDoc posts/{id} sous la règle « auteur »
+  const fbPost2 = page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first();
+  await fbPost2.getByRole('button', { name: 'Supprimer' }).click();
+  await fbPost2.waitFor({ state: 'detached', timeout: 10000 });
+  await shot('06d-delete');
 
   // Créer une NOUVELLE famille (Auth anonyme + création famille/membre sous les règles)
   const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });

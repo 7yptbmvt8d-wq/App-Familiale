@@ -7,10 +7,14 @@ import { ROLE_LABELS } from '../../lib/labels';
 import { useApp } from '../../store/AppContext';
 import styles from './SettingsSheet.module.css';
 
+type NotifState = 'default' | 'granted' | 'denied' | 'unsupported';
+
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { me, backendKind, signOut, listInvitations, createInvitation, revokeInvitation } = useApp();
+  const { me, backendKind, signOut, listInvitations, createInvitation, revokeInvitation, enableNotifications } = useApp();
   const [invites, setInvites] = useState<Invitation[]>([]);
   const [inviteRole, setInviteRole] = useState<Role>('adult');
+  const [notif, setNotif] = useState<NotifState>('default');
+  const [notifBusy, setNotifBusy] = useState(false);
 
   const isAdmin = me?.role === 'admin';
 
@@ -18,7 +22,22 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
     if (open && isAdmin) listInvitations().then(setInvites).catch(() => {});
   }, [open, isAdmin, listInvitations]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (backendKind !== 'firebase' || typeof Notification === 'undefined') {
+      setNotif('unsupported');
+      return;
+    }
+    setNotif(Notification.permission === 'granted' ? 'granted' : Notification.permission === 'denied' ? 'denied' : 'default');
+  }, [open, backendKind]);
+
   if (!me) return null;
+
+  const enableNotif = async () => {
+    setNotifBusy(true);
+    setNotif(await enableNotifications());
+    setNotifBusy(false);
+  };
 
   const generate = async () => {
     const inv = await createInvitation({ role: inviteRole, label: ROLE_LABELS[inviteRole] });
@@ -43,6 +62,38 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
           </p>
         </div>
       </div>
+
+      {/* Notifications push */}
+      {notif !== 'unsupported' && (
+        <div className={styles.block}>
+          <p className="overline" style={{ marginBottom: 8 }}>
+            Notifications
+          </p>
+          <div className={styles.notifRow}>
+            <div className={styles.notifInfo}>
+              <Icon name="bell" size={18} />
+              <div>
+                <strong>Push de la famille</strong>
+                <span>Publications, j'aime, commentaires et événements.</span>
+              </div>
+            </div>
+            {notif === 'granted' ? (
+              <span className={styles.notifOn}>
+                <Icon name="check" size={15} /> Activées
+              </span>
+            ) : notif === 'denied' ? (
+              <span className={styles.notifBlocked}>Bloquées</span>
+            ) : (
+              <button className={styles.gen} disabled={notifBusy} onClick={enableNotif}>
+                {notifBusy ? '…' : 'Activer'}
+              </button>
+            )}
+          </div>
+          {notif === 'denied' && (
+            <p className={styles.notifHint}>Réautorise les notifications dans les réglages du navigateur.</p>
+          )}
+        </div>
+      )}
 
       {/* Invitations (admin) */}
       {isAdmin && (

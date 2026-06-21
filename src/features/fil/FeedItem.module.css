@@ -95,10 +95,12 @@
   background: rgba(196, 98, 63, 0.1);
   border-color: rgba(196, 98, 63, 0.25);
 }
-.del {
-  margin-left: auto;
+.tool {
   color: var(--text-meta);
   padding: 6px 10px;
+}
+.pushRight {
+  margin-left: auto;
 }
 .del:active {
   color: var(--terracotta-deep);

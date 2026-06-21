@@ -17,7 +17,10 @@ import type {
   Post,
   Role,
   Session,
+  UpdatePostInput,
 } from '../backend/types';
+
+export type NotificationOutcome = 'granted' | 'denied' | 'unsupported';
 
 interface AppValue {
   ready: boolean;
@@ -33,10 +36,13 @@ interface AppValue {
   demoSignIn: (memberId: string) => Promise<void>;
   signOut: () => Promise<void>;
   createPost: (input: CreatePostInput) => Promise<void>;
+  updatePost: (postId: string, patch: UpdatePostInput) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   toggleFavorite: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
   updateMember: (memberId: string, patch: { name?: string; relation?: string; birthDate?: string }) => Promise<void>;
+  /** Active les notifications push (Firebase requis). Renvoie l'issue. */
+  enableNotifications: () => Promise<NotificationOutcome>;
   createInvitation: (input: { role: Role; label?: string }) => Promise<Invitation>;
   revokeInvitation: (id: string) => Promise<void>;
   listInvitations: () => Promise<Invitation[]>;
@@ -99,6 +105,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => u();
   }, [sessionMemberId]);
 
+  // Affiche les push reçus app au premier plan (Firebase + autorisation accordée).
+  useEffect(() => {
+    if (BACKEND_KIND !== 'firebase' || !sessionMemberId) return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    let alive = true;
+    let off = () => {};
+    import('../lib/push')
+      .then(({ listenForeground }) => listenForeground())
+      .then((unsub) => {
+        if (alive) off = unsub;
+        else unsub();
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+      off();
+    };
+  }, [sessionMemberId]);
+
   const memberById = useCallback(
     (id: string): Member | undefined => members.find((m) => m.id === id),
     [members],
@@ -122,7 +147,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createPost = useCallback((input: CreatePostInput) => backendRef.current!.createPost(input), []);
+  const updatePost = useCallback(
+    (postId: string, patch: UpdatePostInput) => backendRef.current!.updatePost(postId, patch),
+    [],
+  );
   const deletePost = useCallback((postId: string) => backendRef.current!.deletePost(postId), []);
+
+  const enableNotifications = useCallback(async (): Promise<NotificationOutcome> => {
+    if (BACKEND_KIND !== 'firebase') return 'unsupported';
+    try {
+      const { enablePush } = await import('../lib/push');
+      const token = await enablePush();
+      await backendRef.current!.savePushToken(token);
+      return 'granted';
+    } catch {
+      return typeof Notification !== 'undefined' && Notification.permission === 'denied' ? 'denied' : 'unsupported';
+    }
+  }, []);
   const toggleFavorite = useCallback((postId: string) => backendRef.current!.toggleFavorite(postId), []);
   const addComment = useCallback((postId: string, text: string) => backendRef.current!.addComment(postId, text), []);
 
@@ -173,10 +214,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     demoSignIn,
     signOut,
     createPost,
+    updatePost,
     deletePost,
     toggleFavorite,
     addComment,
     updateMember,
+    enableNotifications,
     createInvitation,
     revokeInvitation,
     listInvitations,

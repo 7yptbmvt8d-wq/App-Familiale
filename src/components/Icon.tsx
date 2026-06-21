@@ -22,6 +22,7 @@ type IconName =
   | 'camera'
   | 'trash'
   | 'pencil'
+  | 'bell'
   | 'logout';
 
 interface Props {
@@ -217,6 +218,13 @@ export function Icon({ name, size = 22, filled = false, stroke = 1.8, className 
       return (
         <svg {...p}>
           <path d="M14.5 6.5 17.5 9.5M4.5 19.5l.9-3.4 9.6-9.6a1.6 1.6 0 0 1 2.3 0l1 1a1.6 1.6 0 0 1 0 2.3l-9.6 9.6z" fill={fc} />
+        </svg>
+      );
+    case 'bell':
+      return (
+        <svg {...p}>
+          <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z" fill={fc} />
+          <path d="M10 19a2 2 0 0 0 4 0" />
         </svg>
       );
     case 'logout':

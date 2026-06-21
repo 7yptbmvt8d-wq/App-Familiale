@@ -81,6 +81,15 @@ export interface CreatePostInput {
   eventLocation?: string;
 }
 
+/** Champs modifiables d'une publication existante (le type ne change pas). */
+export interface UpdatePostInput {
+  text?: string;
+  caption?: string;
+  memoryDate?: number;
+  eventDate?: number;
+  eventLocation?: string;
+}
+
 /** Contrat unique partagé par le mock et Firebase. */
 export interface Backend {
   /* Auth / onboarding (sur invitation uniquement) */
@@ -106,10 +115,18 @@ export interface Backend {
   /* Fil de souvenirs & événements */
   subscribeFeed(cb: (posts: Post[]) => void): () => void;
   createPost(input: CreatePostInput): Promise<void>;
+  /** Modifie sa propre publication (texte, légende, date, lieu…). */
+  updatePost(postId: string, patch: UpdatePostInput): Promise<void>;
   toggleFavorite(postId: string): Promise<void>;
   addComment(postId: string, text: string): Promise<void>;
   /** Supprime un post (son auteur ou un responsable). */
   deletePost(postId: string): Promise<void>;
+
+  /* Notifications push (Firebase Cloud Messaging) */
+  /** Enregistre un jeton d'appareil pour les notifications push. */
+  savePushToken(token: string): Promise<void>;
+  /** Retire un jeton d'appareil (désactivation des notifications). */
+  deletePushToken(token: string): Promise<void>;
 
   /** Libère les ressources (timers, écouteurs). */
   dispose(): void;

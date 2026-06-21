@@ -5,6 +5,7 @@ import { PhotoPlaceholder } from '../../components/PhotoPlaceholder';
 import type { Post } from '../../backend/types';
 import { formatDateLong, relativeTime, souvenirLabel } from '../../lib/format';
 import { useApp } from '../../store/AppContext';
+import { EditPostSheet } from './EditPostSheet';
 import styles from './FeedItem.module.css';
 
 export function FeedItem({ post }: { post: Post }) {
@@ -12,10 +13,12 @@ export function FeedItem({ post }: { post: Post }) {
   const [openComment, setOpenComment] = useState(false);
   const [draft, setDraft] = useState('');
   const [removing, setRemoving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const author = memberById(post.authorId);
   const liked = me ? post.favorites.includes(me.id) : false;
-  const canDelete = !!me && (post.authorId === me.id || me.role === 'admin');
+  const isAuthor = !!me && post.authorId === me.id;
+  const canDelete = !!me && (isAuthor || me.role === 'admin');
 
   const submitComment = async () => {
     if (!draft.trim()) return;
@@ -60,9 +63,18 @@ export function FeedItem({ post }: { post: Post }) {
         <Icon name="comment" size={17} stroke={1.7} />
         {post.comments.length > 0 && <span>{post.comments.length}</span>}
       </button>
+      {isAuthor && (
+        <button
+          className={`${styles.act} ${styles.tool} ${styles.pushRight}`}
+          onClick={() => setEditOpen(true)}
+          aria-label="Modifier"
+        >
+          <Icon name="pencil" size={16} stroke={1.7} />
+        </button>
+      )}
       {canDelete && (
         <button
-          className={`${styles.act} ${styles.del}`}
+          className={`${styles.act} ${styles.tool} ${styles.del} ${isAuthor ? '' : styles.pushRight}`}
           onClick={remove}
           disabled={removing}
           aria-label="Supprimer"
@@ -70,6 +82,7 @@ export function FeedItem({ post }: { post: Post }) {
           <Icon name="trash" size={16} stroke={1.7} />
         </button>
       )}
+      <EditPostSheet post={post} open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   );
 

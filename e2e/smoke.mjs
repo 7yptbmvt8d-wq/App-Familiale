@@ -100,6 +100,15 @@ try {
   await page.locator('article').filter({ hasText: 'mariage de tante Sofia' }).first().waitFor({ timeout: 8000 });
   await shot('07-recit');
 
+  // Modifier sa propre publication (récit)
+  const recit = page.locator('article').filter({ hasText: 'mariage de tante Sofia' }).first();
+  await recit.getByRole('button', { name: 'Modifier' }).click();
+  await page.getByText('Modifier la publication').waitFor({ timeout: 8000 });
+  await page.locator('textarea').fill('Le mariage de tante Sofia — souvenir révisé.');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.locator('article').filter({ hasText: 'souvenir révisé' }).first().waitFor({ timeout: 8000 });
+  await shot('07b-edit-post');
+
   // Publier un événement
   await page.getByRole('button', { name: /Partager un souvenir/ }).click();
   await page.getByRole('button', { name: 'Événement' }).click();
