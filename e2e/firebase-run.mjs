@@ -77,11 +77,22 @@ try {
   await page.getByText('Bonjour Camille').waitFor({ timeout: 15000 });
   await shot('02-fil');
 
-  // Souvenirs (lecture Firestore : posts seedés + souvenir du jour)
+  // Carte temps réel (lecture Firestore : membres + positions seedées)
+  await page.getByRole('button', { name: 'Carte' }).click();
+  await page.getByText('État du foyer').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(1200);
+  await shot('03-map');
+
+  // Agenda (événement seedé + anniversaires)
+  await page.getByRole('button', { name: 'Agenda' }).click();
+  await page.getByText('Anniversaires').waitFor({ timeout: 10000 });
+  await shot('04-agenda');
+
+  // Souvenirs
   await page.getByRole('button', { name: 'Souvenirs' }).click();
   await page.getByText('Souvenir du jour').waitFor({ timeout: 10000 });
   await page.waitForTimeout(600);
-  await shot('03-souvenirs');
+  await shot('05-souvenirs');
 
   // Publier un récit → écriture Firestore → doit revenir via onSnapshot
   await page.getByRole('button', { name: 'Fil' }).click();
@@ -92,7 +103,7 @@ try {
   // Le post doit revenir via onSnapshot dans une carte du fil (≠ le textarea).
   await page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first().waitFor({ timeout: 10000 });
   await page.waitForTimeout(400);
-  await shot('04-after-post');
+  await shot('06-after-post');
 
   console.log(`\nFirebase e2e OK — ${errors.length} erreur(s) applicative(s).`);
   errors.forEach((e) => console.log('  -', e));

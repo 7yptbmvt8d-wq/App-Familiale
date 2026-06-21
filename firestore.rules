@@ -55,6 +55,12 @@ service cloud.firestore {
         allow write: if isAdmin(fid);
       }
 
+      match /locations/{memberId} {
+        allow read: if isMember(fid);
+        // Chacun n'écrit que sa propre position.
+        allow write: if isMember(fid) && request.auth.uid == memberId;
+      }
+
       match /posts/{postId} {
         allow read: if isMember(fid);
         allow create: if isMember(fid) && request.resource.data.authorId == request.auth.uid;

@@ -64,32 +64,43 @@ try {
   await page.getByText('Bonjour Hélène').waitFor({ timeout: 8000 });
   await shot('02-fil');
 
+  // Carte temps réel
+  await page.getByRole('button', { name: 'Carte' }).click();
+  await page.getByText('État du foyer').waitFor({ timeout: 8000 });
+  await page.waitForTimeout(1400);
+  await shot('03-map');
+
+  // Agenda (événements + anniversaires)
+  await page.getByRole('button', { name: 'Agenda' }).click();
+  await page.getByText('Anniversaires').waitFor({ timeout: 8000 });
+  await shot('04-agenda');
+
   // Souvenirs
   await page.getByRole('button', { name: 'Souvenirs' }).click();
   await page.getByText('Souvenir du jour').waitFor({ timeout: 8000 });
-  await shot('03-souvenirs');
+  await shot('05-souvenirs');
 
   // Famille
   await page.getByRole('button', { name: 'Famille' }).click();
   await page.getByText('Grands-parents').waitFor({ timeout: 8000 });
-  await shot('04-famille');
+  await shot('06-famille');
 
-  // Publier un récit dans le fil
+  // Publier un récit
   await page.getByRole('button', { name: 'Fil' }).click();
   await page.getByRole('button', { name: /Partager un souvenir/ }).click();
   await page.getByRole('button', { name: 'Récit' }).click();
   await page.locator('textarea').fill('Le mariage de tante Sofia, sous la pluie et heureux quand même.');
   await page.getByRole('button', { name: 'Ajouter au fil' }).click();
   await page.locator('article').filter({ hasText: 'mariage de tante Sofia' }).first().waitFor({ timeout: 8000 });
-  await shot('05-recit');
+  await shot('07-recit');
 
-  // Publier une photo : upload réel → redimensionnement canvas → rendu
+  // Publier un événement
   await page.getByRole('button', { name: /Partager un souvenir/ }).click();
-  await page.setInputFiles('input[type="file"]', 'public/icons/icon-192.png');
-  await page.getByPlaceholder("étretat · falaise d'aval").fill('vacances 2019 · le lac');
+  await page.getByRole('button', { name: 'Événement' }).click();
+  await page.locator('input').first().fill('Réunion de famille de juillet');
   await page.getByRole('button', { name: 'Ajouter au fil' }).click();
-  await page.locator('article').filter({ hasText: 'vacances 2019' }).first().waitFor({ timeout: 8000 });
-  await shot('06-photo');
+  await page.locator('article').filter({ hasText: 'Réunion de famille' }).first().waitFor({ timeout: 8000 });
+  await shot('08-event');
 
   console.log(`\nParcours OK — ${errors.length} erreur(s) applicative(s).`);
   errors.forEach((e) => console.log('  -', e));

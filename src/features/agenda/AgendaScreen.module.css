@@ -1,0 +1,118 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+  animation: fam-rise 0.35s ease both;
+}
+.header {
+  padding: 0 16px 12px;
+}
+.title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sub {
+  font-size: 13px;
+  color: var(--text-meta);
+  margin-top: 2px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.event,
+.bday {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+  box-shadow: var(--sh-card);
+}
+
+.dateChip {
+  width: 50px;
+  height: 54px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.day {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  line-height: 1;
+}
+.mon {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-meta);
+  margin-top: 2px;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.eventTitle,
+.bdayName {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+.meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.room {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-meta);
+}
+
+.bdayDate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.bdayDate span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--terracotta-deep);
+}
+.bdayDate small {
+  font-size: 11px;
+  color: var(--text-meta);
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text-meta);
+  padding: 4px 2px;
+}

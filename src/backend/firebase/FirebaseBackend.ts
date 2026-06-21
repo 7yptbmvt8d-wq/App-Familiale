@@ -21,16 +21,21 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadString } from 'firebase/storage';
 
+import { haversine, statusFromDistance, zoneFor } from '../../lib/geo';
 import type {
   Backend,
   CreatePostInput,
   Family,
+  Geofence,
   Invitation,
+  LiveMember,
+  Location,
   Member,
   NewProfile,
   Post,
   Role,
   Session,
+  SharingMode,
 } from '../types';
 import { auth, db, storage } from './app';
 
@@ -39,17 +44,19 @@ import { auth, db, storage } from './app';
  *
  * Modèle Firestore :
  *   users/{uid}                    → { familyId, memberId }
- *   families/{fid}                 → { name }
+ *   families/{fid}                 → { name, geofences[] }
  *   families/{fid}/members/{uid}   → Member
- *   families/{fid}/posts/{pid}     → Post (fil de souvenirs)
+ *   families/{fid}/locations/{uid} → Location (mise à jour par l'app mobile)
+ *   families/{fid}/posts/{pid}     → Post (souvenirs & événements)
  *   inviteCodes/{CODE}             → Invitation (racine ; id = code)
  *
  * Auth : connexion anonyme liée à un membre via le code d'invitation.
- * Les règles (firestore.rules) imposent l'accès sur invitation et l'isolation
- * par famille.
+ * Les règles (firestore.rules) imposent l'invitation et le partage obligatoire
+ * pour les mineurs.
  */
 export class FirebaseBackend implements Backend {
   private ctx: { familyId: string; memberId: string } | null = null;
+  private geofences: Geofence[] = [];
 
   private currentUser(): Promise<User | null> {
     return new Promise((resolve) => {
@@ -66,14 +73,31 @@ export class FirebaseBackend implements Backend {
     if (!user) throw new Error('Aucune session active.');
     const idx = await getDoc(doc(db(), 'users', user.uid));
     if (!idx.exists()) throw new Error('Compte non rattaché à une famille.');
-    this.ctx = idx.data() as { familyId: string; memberId: string };
-    return this.ctx;
+    const data = idx.data() as { familyId: string; memberId: string };
+    this.ctx = data;
+    return data;
   }
 
   private async loadFamily(familyId: string): Promise<Family> {
     const snap = await getDoc(doc(db(), 'families', familyId));
     if (!snap.exists()) throw new Error('Famille introuvable.');
-    return { id: snap.id, ...(snap.data() as Omit<Family, 'id'>) };
+    const fam = { id: snap.id, ...(snap.data() as Omit<Family, 'id'>) };
+    this.geofences = fam.geofences ?? [];
+    return fam;
+  }
+
+  private computeLive(m: Member, locs: Record<string, Location>): LiveMember {
+    const loc = m.sharing === 'off' ? undefined : locs[m.id];
+    const home = this.geofences.find((g) => g.kind === 'home');
+    if (!loc || !home) return { ...m, status: 'unknown', distanceMeters: Infinity };
+    const distance = haversine(loc.lat, loc.lng, home.lat, home.lng);
+    const zone = zoneFor(loc, this.geofences);
+    const status = zone?.kind === 'home' ? 'home' : statusFromDistance(distance, home.radius);
+    let etaMinutes: number | undefined;
+    if (loc.speed && loc.speed > 1 && status !== 'home') {
+      etaMinutes = distance / ((loc.speed * 1000) / 60);
+    }
+    return { ...m, location: loc, status, zone, distanceMeters: distance, etaMinutes };
   }
 
   /* ── Auth / onboarding ───────────────────────────────────── */
@@ -104,6 +128,7 @@ export class FirebaseBackend implements Backend {
       throw new Error('Code d’invitation invalide ou déjà utilisé.');
     }
     const familyId = invite.familyId;
+    const role: Role = invite.role;
 
     // 2. Créer l'index users/{uid} AVANT la fiche membre (les règles en dépendent).
     await setDoc(doc(db(), 'users', uid), { familyId, memberId: uid });
@@ -113,11 +138,12 @@ export class FirebaseBackend implements Backend {
       id: uid,
       familyId,
       name: profile.name.trim(),
-      role: invite.role,
+      role,
       relation: profile.relation?.trim() || undefined,
       birthDate: profile.birthDate,
       color: '#B98A57',
       initials: profile.name.trim().slice(0, 2),
+      sharing: role === 'minor' ? 'auto' : 'optin',
     };
     await setDoc(doc(db(), 'families', familyId, 'members', uid), member);
 
@@ -180,7 +206,48 @@ export class FirebaseBackend implements Backend {
     await deleteDoc(doc(db(), 'inviteCodes', id));
   }
 
-  /* ── Fil de souvenirs ────────────────────────────────────── */
+  /* ── Localisation temps réel ─────────────────────────────── */
+  subscribeLive(cb: (members: LiveMember[]) => void): () => void {
+    let unsubs: Array<() => void> = [];
+    let cancelled = false;
+    let members: Member[] = [];
+    let locs: Record<string, Location> = {};
+    const recompute = () => cb(members.map((m) => this.computeLive(m, locs)));
+
+    this.resolveCtx()
+      .then(async ({ familyId }) => {
+        await this.loadFamily(familyId);
+        if (cancelled) return;
+        const u1 = onSnapshot(collection(db(), 'families', familyId, 'members'), (s) => {
+          members = s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Member, 'id'>) }));
+          recompute();
+        });
+        const u2 = onSnapshot(collection(db(), 'families', familyId, 'locations'), (s) => {
+          locs = {};
+          s.docs.forEach((d) => (locs[d.id] = d.data() as Location));
+          recompute();
+        });
+        unsubs = [u1, u2];
+      })
+      .catch((e) => console.error('[firebase] subscribeLive', e));
+
+    return () => {
+      cancelled = true;
+      unsubs.forEach((u) => u());
+    };
+  }
+
+  async setSharing(memberId: string, mode: SharingMode): Promise<void> {
+    const { familyId } = await this.resolveCtx();
+    const snap = await getDoc(doc(db(), 'families', familyId, 'members', memberId));
+    const role = (snap.data() as Member | undefined)?.role;
+    if (role === 'minor' && mode !== 'auto') {
+      throw new Error('Le partage de localisation est obligatoire pour un compte mineur.');
+    }
+    await updateDoc(doc(db(), 'families', familyId, 'members', memberId), { sharing: mode });
+  }
+
+  /* ── Fil de souvenirs & événements ───────────────────────── */
   subscribeFeed(cb: (posts: Post[]) => void): () => void {
     let unsub = () => {};
     let cancelled = false;
@@ -222,6 +289,8 @@ export class FirebaseBackend implements Backend {
       memoryDate: input.memoryDate,
       favorites: [],
       comments: [],
+      eventDate: input.eventDate,
+      eventLocation: input.eventLocation,
     };
     const ref = doc(collection(db(), 'families', familyId, 'posts'));
     await setDoc(ref, post);

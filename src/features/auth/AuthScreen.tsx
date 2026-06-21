@@ -24,7 +24,7 @@ export function AuthScreen() {
   };
 
   const helene = members.find((m) => m.id === 'm-helene') ?? members.find((m) => m.role === 'admin');
-  const jeanne = members.find((m) => m.id === 'm-jeanne') ?? members.find((m) => m.role === 'member');
+  const lea = members.find((m) => m.id === 'm-lea') ?? members.find((m) => m.role === 'minor');
 
   return (
     <div className={styles.screen}>
@@ -70,12 +70,12 @@ export function AuthScreen() {
           <div className={styles.codes}>
             <span>Codes de démo :</span>
             <code onClick={() => setCode('LACROIX-2026')}>LACROIX-2026</code>
-            <code onClick={() => setCode('LACROIX-7788')}>LACROIX-7788</code>
+            <code onClick={() => setCode('ADO-7788')}>ADO-7788</code>
           </div>
         )}
       </div>
 
-      {backendKind === 'mock' && (helene || jeanne) && (
+      {backendKind === 'mock' && (helene || lea) && (
         <div className={styles.demo}>
           <span className="overline">Aperçu rapide</span>
           <div className={styles.demoBtns}>
@@ -84,8 +84,8 @@ export function AuthScreen() {
                 Entrer comme {helene.name} · responsable
               </button>
             )}
-            {jeanne && (
-              <button onClick={() => demoSignIn(jeanne.id)}>Entrer comme {jeanne.name} · membre</button>
+            {lea && (
+              <button onClick={() => demoSignIn(lea.id)}>Entrer comme {lea.name} · mineure</button>
             )}
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Avatar } from '../../components/Avatar';
 import { Icon } from '../../components/Icon';
 import { PhotoPlaceholder } from '../../components/PhotoPlaceholder';
 import type { Post } from '../../backend/types';
-import { relativeTime, souvenirLabel } from '../../lib/format';
+import { formatDateLong, relativeTime, souvenirLabel } from '../../lib/format';
 import { useApp } from '../../store/AppContext';
 import styles from './FeedItem.module.css';
 
@@ -96,6 +96,35 @@ export function FeedItem({ post }: { post: Post }) {
           {actions}
         </div>
         {comments}
+      </article>
+    );
+  }
+
+  /* ── Événement (ticket) ─────────────────────────────────── */
+  if (post.type === 'event') {
+    return (
+      <article className={`${styles.card} ${styles.ticket}`}>
+        <div className={styles.ticketBody}>
+          <span className="overline" style={{ color: 'var(--ocre)' }}>
+            Événement
+          </span>
+          <h3 className={styles.ticketTitle}>{post.text}</h3>
+          <div className={styles.ticketMeta}>
+            <span>
+              <Icon name="calendar" size={15} /> {post.eventDate ? formatDateLong(post.eventDate) : '—'}
+            </span>
+            {post.eventLocation && (
+              <span>
+                <Icon name="pin" size={15} /> {post.eventLocation}
+              </span>
+            )}
+          </div>
+          {actions}
+          {comments}
+        </div>
+        <div className={styles.stub}>
+          <Icon name="ticket" size={20} />
+        </div>
       </article>
     );
   }

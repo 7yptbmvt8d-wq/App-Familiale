@@ -3,6 +3,8 @@ import styles from './TabBar.module.css';
 
 const TABS = [
   { id: 'fil', label: 'Fil', icon: 'feed' },
+  { id: 'map', label: 'Carte', icon: 'pin' },
+  { id: 'agenda', label: 'Agenda', icon: 'calendar' },
   { id: 'souvenirs', label: 'Souvenirs', icon: 'sparkle' },
   { id: 'famille', label: 'Famille', icon: 'tree' },
 ] as const;
@@ -21,7 +23,7 @@ export function TabBar({ active, onChange }: { active: TabId; onChange: (t: TabI
             onClick={() => onChange(t.id)}
             aria-current={on ? 'page' : undefined}
           >
-            <Icon name={t.icon} size={24} filled={on} stroke={on ? 1.9 : 1.8} />
+            <Icon name={t.icon} size={23} filled={on} stroke={on ? 1.9 : 1.8} />
             <span>{t.label}</span>
           </button>
         );

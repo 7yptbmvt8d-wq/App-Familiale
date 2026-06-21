@@ -56,3 +56,17 @@ export function souvenirLabel(memoryDate: number, now = Date.now()): string {
   if (y === 1) return 'il y a 1 an';
   return `il y a ${y} ans`;
 }
+
+/** « arrive dans ~12 min » ; au-delà d'une heure, en heures. */
+export function etaLabel(minutes: number): string {
+  if (minutes <= 1) return "arrive à l'instant";
+  if (minutes < 60) return `~${Math.round(minutes)} min`;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return m ? `~${h} h ${m}` : `~${h} h`;
+}
+
+/** Heure d'arrivée estimée absolue (« vers 18h05 »). */
+export function etaClock(minutes: number, now = Date.now()): string {
+  return `vers ${formatTime(now + minutes * 60_000)}`;
+}

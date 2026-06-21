@@ -1,10 +1,31 @@
 /* ───────────────────────────────────────────────────────────
    Types du domaine + contrat Backend.
-   MVP « Mémoire familiale » : fil de souvenirs, pas de géolocalisation.
+   Mémoire familiale + événements + géolocalisation temps réel.
    Une seule interface, deux implémentations : mock & firebase.
    ─────────────────────────────────────────────────────────── */
 
-export type Role = 'admin' | 'member';
+export type Role = 'admin' | 'adult' | 'minor';
+
+/** Mode de partage de localisation.
+ *  - auto      : permanent et NON désactivable (mineurs)
+ *  - optin     : permanent, choisi par l'adulte
+ *  - temporary : limité à une durée / un trajet
+ *  - off       : aucun partage (interdit pour les mineurs)
+ */
+export type SharingMode = 'auto' | 'optin' | 'temporary' | 'off';
+
+export type GeoStatus = 'home' | 'nearby' | 'away' | 'unknown';
+
+export type GeofenceKind = 'home' | 'school' | 'work' | 'custom';
+
+export interface Geofence {
+  id: string;
+  label: string; // « Maison », « École », « Travail »
+  kind: GeofenceKind;
+  lat: number;
+  lng: number;
+  radius: number; // mètres
+}
 
 export interface Member {
   id: string;
@@ -15,9 +36,28 @@ export interface Member {
   birthDate?: string; // ISO yyyy-mm-dd
   color: string; // couleur d'avatar (fallback sans photo)
   initials: string;
+  sharing: SharingMode;
 }
 
-export type PostType = 'photo' | 'text' | 'memory';
+export interface Location {
+  memberId: string;
+  lat: number;
+  lng: number;
+  updatedAt: number; // epoch ms
+  battery?: number; // 0..1
+  speed?: number; // km/h
+}
+
+/** Membre enrichi des données temps réel (calculées côté lecture). */
+export interface LiveMember extends Member {
+  location?: Location;
+  status: GeoStatus;
+  zone?: Geofence; // zone courante si à l'intérieur d'un géorepère
+  distanceMeters: number; // distance jusqu'à la maison
+  etaMinutes?: number; // estimation d'arrivée si en rapprochement
+}
+
+export type PostType = 'photo' | 'text' | 'event' | 'memory';
 
 export interface Comment {
   id: string;
@@ -39,6 +79,9 @@ export interface Post {
   memoryDate?: number; // date du souvenir (« quand c'était »), si différente
   favorites: string[]; // memberIds
   comments: Comment[];
+  // spécifique « event »
+  eventDate?: number;
+  eventLocation?: string;
 }
 
 export interface Invitation {
@@ -55,6 +98,7 @@ export interface Invitation {
 export interface Family {
   id: string;
   name: string;
+  geofences: Geofence[];
 }
 
 export interface Session {
@@ -74,6 +118,8 @@ export interface CreatePostInput {
   caption?: string;
   imageUrl?: string;
   memoryDate?: number;
+  eventDate?: number;
+  eventLocation?: string;
 }
 
 /** Contrat unique partagé par le mock et Firebase. */
@@ -94,12 +140,16 @@ export interface Backend {
   createInvitation(input: { role: Role; label?: string }): Promise<Invitation>;
   revokeInvitation(id: string): Promise<void>;
 
-  /* Fil de souvenirs */
+  /* Localisation temps réel */
+  subscribeLive(cb: (members: LiveMember[]) => void): () => void;
+  setSharing(memberId: string, mode: SharingMode): Promise<void>;
+
+  /* Fil de souvenirs & événements */
   subscribeFeed(cb: (posts: Post[]) => void): () => void;
   createPost(input: CreatePostInput): Promise<void>;
   toggleFavorite(postId: string): Promise<void>;
   addComment(postId: string, text: string): Promise<void>;
 
-  /** Libère les ressources (écouteurs). */
+  /** Libère les ressources (timers, écouteurs). */
   dispose(): void;
 }
