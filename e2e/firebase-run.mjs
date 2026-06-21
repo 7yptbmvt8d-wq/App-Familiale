@@ -105,6 +105,22 @@ try {
   await page.waitForTimeout(400);
   await shot('06-after-post');
 
+  // Créer une NOUVELLE famille (Auth anonyme + création famille/membre sous les règles)
+  const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
+  const p2 = await ctx2.newPage();
+  p2.on('console', (m) => {
+    if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
+  });
+  p2.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  await p2.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await p2.getByRole('button', { name: 'Créer ma famille' }).click();
+  await p2.getByPlaceholder('Famille Martin').fill('Famille Test');
+  await p2.getByPlaceholder('Camille').fill('Alex');
+  await p2.getByRole('button', { name: 'Créer ma famille' }).last().click();
+  await p2.getByText('Bonjour Alex').waitFor({ timeout: 15000 });
+  await p2.screenshot({ path: `${OUT}07-create-family.png` });
+  await ctx2.close();
+
   console.log(`\nFirebase e2e OK — ${errors.length} erreur(s) applicative(s).`);
   errors.forEach((e) => console.log('  -', e));
 } catch (e) {

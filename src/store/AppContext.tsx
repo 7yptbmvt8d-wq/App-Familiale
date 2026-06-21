@@ -32,6 +32,7 @@ interface AppValue {
   memberById: (id: string) => Member | undefined;
 
   join: (code: string, profile: NewProfile) => Promise<void>;
+  createFamily: (familyName: string, profile: NewProfile) => Promise<void>;
   demoSignIn: (memberId: string) => Promise<void>;
   signOut: () => Promise<void>;
   setSharing: (mode: SharingMode) => Promise<void>;
@@ -112,6 +113,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSession(await backendRef.current!.joinWithCode(code, profile));
   }, []);
 
+  const createFamily = useCallback(async (familyName: string, profile: NewProfile) => {
+    setSession(await backendRef.current!.createFamily({ familyName, profile }));
+  }, []);
+
   const demoSignIn = useCallback(async (memberId: string) => {
     setSession(await backendRef.current!.demoSignIn(memberId));
   }, []);
@@ -151,6 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     members,
     memberById,
     join,
+    createFamily,
     demoSignIn,
     signOut,
     setSharing,

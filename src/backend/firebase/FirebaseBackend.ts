@@ -155,6 +155,35 @@ export class FirebaseBackend implements Backend {
     return { member, family };
   }
 
+  async createFamily({ familyName, profile }: { familyName: string; profile: NewProfile }): Promise<Session> {
+    const cred = await signInAnonymously(auth());
+    const uid = cred.user.uid;
+    const familyId = `fam-${Math.random().toString(36).slice(2, 10)}`;
+    const name = familyName.trim() || 'Ma famille';
+
+    // 1. users/{uid} d'abord (les règles en dépendent).
+    await setDoc(doc(db(), 'users', uid), { familyId, memberId: uid });
+    // 2. la famille.
+    await setDoc(doc(db(), 'families', familyId), { id: familyId, name, geofences: [] });
+    // 3. le créateur, responsable.
+    const member: Member = {
+      id: uid,
+      familyId,
+      name: profile.name.trim(),
+      role: 'admin',
+      relation: profile.relation?.trim() || undefined,
+      birthDate: profile.birthDate,
+      color: '#C4623F',
+      initials: profile.name.trim().slice(0, 2),
+      sharing: 'optin',
+    };
+    await setDoc(doc(db(), 'families', familyId, 'members', uid), member);
+
+    this.ctx = { familyId, memberId: uid };
+    const family = await this.loadFamily(familyId);
+    return { member, family };
+  }
+
   async demoSignIn(): Promise<Session> {
     throw new Error('La connexion démo n’est disponible que sur le backend mock.');
   }
@@ -187,7 +216,9 @@ export class FirebaseBackend implements Backend {
 
   async createInvitation(input: { role: Role; label?: string }): Promise<Invitation> {
     const { familyId, memberId } = await this.resolveCtx();
-    const code = `LACROIX-${Math.floor(1000 + Math.random() * 9000)}`;
+    const fam = await this.loadFamily(familyId);
+    const prefix = fam.name.slice(0, 6).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'FAM';
+    const code = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
     const inv: Invitation = {
       id: code,
       familyId,

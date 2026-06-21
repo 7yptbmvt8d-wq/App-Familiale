@@ -38,6 +38,8 @@ service cloud.firestore {
 
     match /families/{fid} {
       allow read: if isMember(fid);
+      // Création d'une nouvelle famille : l'auteur (déjà rattaché via users/{uid}) la crée.
+      allow create: if request.auth != null && isMember(fid);
       allow write: if isAdmin(fid);
 
       match /members/{memberId} {

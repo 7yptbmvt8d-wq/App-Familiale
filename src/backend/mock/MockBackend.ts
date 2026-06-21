@@ -28,6 +28,7 @@ const TICK_MS = 2500;
 
 interface PersistShape {
   sessionMemberId: string | null;
+  family: Family;
   members: Member[];
   posts: Post[];
   invitations: Invitation[];
@@ -49,6 +50,7 @@ function rid(prefix: string) {
 }
 
 export class MockBackend implements Backend {
+  private family: Family;
   private members: Member[];
   private posts: Post[];
   private invitations: Invitation[];
@@ -63,6 +65,7 @@ export class MockBackend implements Backend {
 
   constructor() {
     const loaded = this.load();
+    this.family = loaded?.family ?? structuredClone(FAMILY);
     this.members = loaded?.members ?? structuredClone(SEED_MEMBERS);
     this.posts = loaded?.posts ?? structuredClone(SEED_POSTS);
     this.invitations = loaded?.invitations ?? structuredClone(SEED_INVITATIONS);
@@ -90,6 +93,7 @@ export class MockBackend implements Backend {
   private save() {
     const data: PersistShape = {
       sessionMemberId: this.sessionMemberId,
+      family: this.family,
       members: this.members,
       posts: this.posts,
       invitations: this.invitations,
@@ -181,14 +185,14 @@ export class MockBackend implements Backend {
   }
 
   private computeLive(m: Member): LiveMember {
-    const sharingOff = m.sharing === 'off';
-    const loc = sharingOff ? undefined : this.locations[m.id];
-    if (!loc) {
+    const loc = m.sharing === 'off' ? undefined : this.locations[m.id];
+    const home = this.family.geofences.find((g) => g.kind === 'home');
+    if (!loc || !home) {
       return { ...m, status: 'unknown', distanceMeters: Infinity };
     }
-    const distance = haversine(loc.lat, loc.lng, HOME.lat, HOME.lng);
-    const zone = zoneFor(loc, FAMILY.geofences);
-    const status = zone?.kind === 'home' ? 'home' : statusFromDistance(distance, 120);
+    const distance = haversine(loc.lat, loc.lng, home.lat, home.lng);
+    const zone = zoneFor(loc, this.family.geofences);
+    const status = zone?.kind === 'home' ? 'home' : statusFromDistance(distance, home.radius);
 
     let etaMinutes: number | undefined;
     const s = this.sim[m.id];
@@ -229,7 +233,7 @@ export class MockBackend implements Backend {
   /* ── Auth / onboarding ───────────────────────────────────── */
   async getSession(): Promise<Session | null> {
     const m = this.members.find((x) => x.id === this.sessionMemberId);
-    return m ? { member: m, family: FAMILY } : null;
+    return m ? { member: m, family: this.family } : null;
   }
 
   async joinWithCode(code: string, profile: NewProfile): Promise<Session> {
@@ -244,7 +248,7 @@ export class MockBackend implements Backend {
     const role: Role = invite.role;
     const member: Member = {
       id: rid('m'),
-      familyId: FAMILY.id,
+      familyId: this.family.id,
       name,
       role,
       relation: profile.relation?.trim() || undefined,
@@ -260,7 +264,35 @@ export class MockBackend implements Backend {
     this.sessionMemberId = member.id;
     this.save();
     this.emitLive();
-    return { member, family: FAMILY };
+    return { member, family: this.family };
+  }
+
+  async createFamily({ familyName, profile }: { familyName: string; profile: NewProfile }): Promise<Session> {
+    const name = profile.name.trim();
+    if (!name) throw new Error('Le prénom est requis.');
+    const familyId = rid('fam');
+    this.family = { id: familyId, name: familyName.trim() || 'Ma famille', geofences: [] };
+    const member: Member = {
+      id: rid('m'),
+      familyId,
+      name,
+      role: 'admin',
+      relation: profile.relation?.trim() || undefined,
+      birthDate: profile.birthDate,
+      color: '#C4623F',
+      initials: name.slice(0, 2),
+      sharing: 'optin',
+    };
+    this.members = [member];
+    this.posts = [];
+    this.invitations = [];
+    this.sim = {};
+    this.locations = {};
+    this.sessionMemberId = member.id;
+    this.save();
+    this.emitLive();
+    this.emitFeed();
+    return { member, family: this.family };
   }
 
   async demoSignIn(memberId: string): Promise<Session> {
@@ -268,7 +300,7 @@ export class MockBackend implements Backend {
     if (!m) throw new Error('Membre introuvable.');
     this.sessionMemberId = m.id;
     this.save();
-    return { member: m, family: FAMILY };
+    return { member: m, family: this.family };
   }
 
   async signOut(): Promise<void> {
@@ -278,7 +310,7 @@ export class MockBackend implements Backend {
 
   /* ── Famille ─────────────────────────────────────────────── */
   async getFamily(): Promise<Family> {
-    return FAMILY;
+    return this.family;
   }
 
   async listMembers(): Promise<Member[]> {
@@ -295,8 +327,8 @@ export class MockBackend implements Backend {
     if (me.role !== 'admin') throw new Error('Seuls les administrateurs peuvent inviter.');
     const inv: Invitation = {
       id: rid('i'),
-      familyId: FAMILY.id,
-      code: `LACROIX-${Math.floor(1000 + Math.random() * 9000)}`,
+      familyId: this.family.id,
+      code: `${this.family.name.slice(0, 6).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'FAM'}-${Math.floor(1000 + Math.random() * 9000)}`,
       role: input.role,
       label: input.label,
       createdBy: me.id,
@@ -342,7 +374,7 @@ export class MockBackend implements Backend {
     const me = this.requireMember();
     const post: Post = {
       id: rid('p'),
-      familyId: FAMILY.id,
+      familyId: this.family.id,
       authorId: me.id,
       type: input.type,
       text: input.text,

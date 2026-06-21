@@ -3,19 +3,26 @@ import { Icon } from '../../components/Icon';
 import { useApp } from '../../store/AppContext';
 import styles from './AuthScreen.module.css';
 
+type Mode = 'join' | 'create';
+
 export function AuthScreen() {
-  const { join, demoSignIn, members, backendKind } = useApp();
+  const { join, createFamily, demoSignIn, members, backendKind } = useApp();
+  const [mode, setMode] = useState<Mode>('join');
   const [code, setCode] = useState('');
+  const [familyName, setFamilyName] = useState('');
   const [name, setName] = useState('');
   const [relation, setRelation] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const canSubmit = mode === 'join' ? !!(code && name) : !!(familyName && name);
+
   const submit = async () => {
     setError('');
     setBusy(true);
     try {
-      await join(code, { name, relation: relation || undefined });
+      if (mode === 'join') await join(code, { name, relation: relation || undefined });
+      else await createFamily(familyName, { name, relation: relation || undefined });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Une erreur est survenue.');
     } finally {
@@ -37,36 +44,63 @@ export function AuthScreen() {
       </div>
 
       <div className={styles.card}>
-        <label className={styles.label}>Code d'invitation</label>
-        <input
-          className={styles.input}
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="LACROIX-2026"
-          autoCapitalize="characters"
-        />
+        <div className={styles.modeTabs}>
+          <button className={`${styles.modeTab} ${mode === 'join' ? styles.modeOn : ''}`} onClick={() => setMode('join')}>
+            Rejoindre
+          </button>
+          <button className={`${styles.modeTab} ${mode === 'create' ? styles.modeOn : ''}`} onClick={() => setMode('create')}>
+            Créer ma famille
+          </button>
+        </div>
+
+        {mode === 'join' ? (
+          <>
+            <label className={styles.label}>Code d'invitation</label>
+            <input
+              className={styles.input}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="LACROIX-2026"
+              autoCapitalize="characters"
+            />
+          </>
+        ) : (
+          <>
+            <label className={styles.label}>Nom de la famille</label>
+            <input
+              className={styles.input}
+              value={familyName}
+              onChange={(e) => setFamilyName(e.target.value)}
+              placeholder="Famille Martin"
+            />
+          </>
+        )}
+
         <label className={styles.label}>Votre prénom</label>
-        <input
-          className={styles.input}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Camille"
-        />
+        <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Camille" />
         <label className={styles.label}>Lien de parenté (optionnel)</label>
         <input
           className={styles.input}
           value={relation}
           onChange={(e) => setRelation(e.target.value)}
-          placeholder="Tante, Cousin…"
+          placeholder="Mère, Oncle…"
         />
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button className={styles.join} onClick={submit} disabled={busy || !code || !name}>
-          {busy ? 'Connexion…' : 'Rejoindre la famille'}
+        <button className={styles.join} onClick={submit} disabled={busy || !canSubmit}>
+          {busy ? 'Un instant…' : mode === 'join' ? 'Rejoindre la famille' : 'Créer ma famille'}
         </button>
 
-        {backendKind === 'mock' && (
+        {mode === 'create' && (
+          <p className={styles.hint}>
+            Tu deviens <strong>responsable</strong> : tu pourras ensuite inviter les autres
+            (Réglages → Inviter un membre).
+            {backendKind === 'mock' && ' En démo, cela remplace la famille d’exemple dans ce navigateur.'}
+          </p>
+        )}
+
+        {mode === 'join' && backendKind === 'mock' && (
           <div className={styles.codes}>
             <span>Codes de démo :</span>
             <code onClick={() => setCode('LACROIX-2026')}>LACROIX-2026</code>
@@ -75,18 +109,14 @@ export function AuthScreen() {
         )}
       </div>
 
-      {backendKind === 'mock' && (helene || lea) && (
+      {mode === 'join' && backendKind === 'mock' && (helene || lea) && (
         <div className={styles.demo}>
           <span className="overline">Aperçu rapide</span>
           <div className={styles.demoBtns}>
             {helene && (
-              <button onClick={() => demoSignIn(helene.id)}>
-                Entrer comme {helene.name} · responsable
-              </button>
+              <button onClick={() => demoSignIn(helene.id)}>Entrer comme {helene.name} · responsable</button>
             )}
-            {lea && (
-              <button onClick={() => demoSignIn(lea.id)}>Entrer comme {lea.name} · mineure</button>
-            )}
+            {lea && <button onClick={() => demoSignIn(lea.id)}>Entrer comme {lea.name} · mineure</button>}
           </div>
         </div>
       )}

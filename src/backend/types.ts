@@ -127,6 +127,8 @@ export interface Backend {
   /* Auth / onboarding (sur invitation uniquement) */
   getSession(): Promise<Session | null>;
   joinWithCode(code: string, profile: NewProfile): Promise<Session>;
+  /** Crée une nouvelle famille ; l'auteur en devient responsable. */
+  createFamily(input: { familyName: string; profile: NewProfile }): Promise<Session>;
   /** Raccourci démo : ouvrir une session en tant que membre existant (mock only). */
   demoSignIn(memberId: string): Promise<Session>;
   signOut(): Promise<void>;
