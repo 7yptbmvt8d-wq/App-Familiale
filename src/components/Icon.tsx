@@ -20,6 +20,8 @@ type IconName =
   | 'ticket'
   | 'feed'
   | 'camera'
+  | 'trash'
+  | 'pencil'
   | 'logout';
 
 interface Props {
@@ -201,6 +203,20 @@ export function Icon({ name, size = 22, filled = false, stroke = 1.8, className 
             fill={fc}
           />
           <circle cx="12" cy="13.5" r="3.1" fill={filled ? '#FBF6EE' : 'none'} stroke={filled ? 'none' : 'currentColor'} />
+        </svg>
+      );
+    case 'trash':
+      return (
+        <svg {...p}>
+          <path d="M4.5 7h15M9 7V5.4A1.4 1.4 0 0 1 10.4 4h3.2A1.4 1.4 0 0 1 15 5.4V7" />
+          <path d="M6.5 7l.8 11.1A1.6 1.6 0 0 0 8.9 19.6h6.2a1.6 1.6 0 0 0 1.6-1.5L17.5 7" />
+          <path d="M10 11v5M14 11v5" />
+        </svg>
+      );
+    case 'pencil':
+      return (
+        <svg {...p}>
+          <path d="M14.5 6.5 17.5 9.5M4.5 19.5l.9-3.4 9.6-9.6a1.6 1.6 0 0 1 2.3 0l1 1a1.6 1.6 0 0 1 0 2.3l-9.6 9.6z" fill={fc} />
         </svg>
       );
     case 'logout':

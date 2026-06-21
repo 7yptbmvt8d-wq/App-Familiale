@@ -206,6 +206,18 @@ export class FirebaseBackend implements Backend {
     return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Member, 'id'>) }));
   }
 
+  async updateMember(memberId: string, patch: { name?: string; relation?: string; birthDate?: string }): Promise<void> {
+    const { familyId } = await this.resolveCtx();
+    const data: Record<string, unknown> = {};
+    if (patch.name !== undefined && patch.name.trim()) {
+      data.name = patch.name.trim();
+      data.initials = patch.name.trim().slice(0, 2);
+    }
+    if (patch.relation !== undefined) data.relation = patch.relation.trim();
+    if (patch.birthDate !== undefined) data.birthDate = patch.birthDate;
+    if (Object.keys(data).length) await updateDoc(doc(db(), 'families', familyId, 'members', memberId), data);
+  }
+
   /* ── Invitations ─────────────────────────────────────────── */
   async listInvitations(): Promise<Invitation[]> {
     const { familyId } = await this.resolveCtx();
@@ -259,7 +271,12 @@ export class FirebaseBackend implements Backend {
           s.docs.forEach((d) => (locs[d.id] = d.data() as Location));
           recompute();
         });
-        unsubs = [u1, u2];
+        // Les lieux (géorepères) peuvent changer en direct → on met à jour le cache.
+        const u3 = onSnapshot(doc(db(), 'families', familyId), (snap) => {
+          this.geofences = (snap.data() as { geofences?: Geofence[] } | undefined)?.geofences ?? [];
+          recompute();
+        });
+        unsubs = [u1, u2, u3];
       })
       .catch((e) => console.error('[firebase] subscribeLive', e));
 
@@ -369,6 +386,11 @@ export class FirebaseBackend implements Backend {
         createdAt: Date.now(),
       }),
     });
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    const { familyId } = await this.resolveCtx();
+    await deleteDoc(doc(db(), 'families', familyId, 'posts', postId));
   }
 
   dispose() {

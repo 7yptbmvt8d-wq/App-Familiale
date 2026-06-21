@@ -20,6 +20,10 @@ export function AppShell() {
         {tab === 'famille' && <FamilleScreen />}
       </main>
       <TabBar active={tab} onChange={setTab} />
+      {/* Cible des feuilles modales : hors du flux des écrans (qui portent une
+          transformation d'animation créant un contexte d'empilement) afin que
+          les feuilles passent par-dessus la barre d'onglets. */}
+      <div id="app-sheet-root" />
     </div>
   );
 }

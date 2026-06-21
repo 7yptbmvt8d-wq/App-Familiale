@@ -8,18 +8,32 @@ import { useApp } from '../../store/AppContext';
 import styles from './FeedItem.module.css';
 
 export function FeedItem({ post }: { post: Post }) {
-  const { memberById, me, toggleFavorite, addComment } = useApp();
+  const { memberById, me, toggleFavorite, addComment, deletePost } = useApp();
   const [openComment, setOpenComment] = useState(false);
   const [draft, setDraft] = useState('');
+  const [removing, setRemoving] = useState(false);
 
   const author = memberById(post.authorId);
   const liked = me ? post.favorites.includes(me.id) : false;
+  const canDelete = !!me && (post.authorId === me.id || me.role === 'admin');
 
   const submitComment = async () => {
     if (!draft.trim()) return;
     await addComment(post.id, draft);
     setDraft('');
     setOpenComment(false);
+  };
+
+  const remove = async () => {
+    if (removing) return;
+    if (!window.confirm('Supprimer définitivement cette publication ?')) return;
+    setRemoving(true);
+    try {
+      await deletePost(post.id);
+    } catch (e) {
+      setRemoving(false);
+      window.alert(e instanceof Error ? e.message : 'Suppression impossible.');
+    }
   };
 
   const header = author && (
@@ -46,6 +60,16 @@ export function FeedItem({ post }: { post: Post }) {
         <Icon name="comment" size={17} stroke={1.7} />
         {post.comments.length > 0 && <span>{post.comments.length}</span>}
       </button>
+      {canDelete && (
+        <button
+          className={`${styles.act} ${styles.del}`}
+          onClick={remove}
+          disabled={removing}
+          aria-label="Supprimer"
+        >
+          <Icon name="trash" size={16} stroke={1.7} />
+        </button>
+      )}
     </div>
   );
 

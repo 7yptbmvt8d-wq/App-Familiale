@@ -136,6 +136,8 @@ export interface Backend {
   /* Famille */
   getFamily(): Promise<Family>;
   listMembers(): Promise<Member[]>;
+  /** Modifie le profil d'un membre (soi-même, ou n'importe qui si responsable). */
+  updateMember(memberId: string, patch: { name?: string; relation?: string; birthDate?: string }): Promise<void>;
 
   /* Invitations (admin) */
   listInvitations(): Promise<Invitation[]>;
@@ -155,6 +157,8 @@ export interface Backend {
   createPost(input: CreatePostInput): Promise<void>;
   toggleFavorite(postId: string): Promise<void>;
   addComment(postId: string, text: string): Promise<void>;
+  /** Supprime un post (son auteur ou un responsable). */
+  deletePost(postId: string): Promise<void>;
 
   /** Libère les ressources (timers, écouteurs). */
   dispose(): void;

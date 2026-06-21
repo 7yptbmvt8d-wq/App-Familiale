@@ -52,6 +52,7 @@ page.on('console', (m) => {
   if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
 });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+page.on('dialog', (d) => d.accept()); // confirmations (suppression…)
 const shot = (n) => page.screenshot({ path: `${OUT}${n}.png` });
 
 try {
@@ -90,7 +91,18 @@ try {
   await page.getByRole('button', { name: /Partager un souvenir/ }).click();
   await page.getByRole('button', { name: 'Récit' }).click();
   await page.locator('textarea').fill('Le mariage de tante Sofia, sous la pluie et heureux quand même.');
-  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
+  // La feuille (montée via portail) doit recouvrir la barre d'onglets : le
+  // bouton de publication doit être l'élément cliqué à son propre centre, et
+  // non masqué par le pied de page.
+  await shot('07a-composer');
+  const pub = page.getByRole('button', { name: 'Ajouter au fil' });
+  const onTop = await pub.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return el.contains(hit);
+  });
+  if (!onTop) throw new Error('Le bouton de publication est masqué par la barre d’onglets.');
+  await pub.click();
   await page.locator('article').filter({ hasText: 'mariage de tante Sofia' }).first().waitFor({ timeout: 8000 });
   await shot('07-recit');
 
@@ -101,6 +113,22 @@ try {
   await page.getByRole('button', { name: 'Ajouter au fil' }).click();
   await page.locator('article').filter({ hasText: 'Réunion de famille' }).first().waitFor({ timeout: 8000 });
   await shot('08-event');
+
+  // Supprimer l'événement que l'on vient de publier (confirmation auto-acceptée)
+  const evt = page.locator('article').filter({ hasText: 'Réunion de famille' }).first();
+  await evt.getByRole('button', { name: 'Supprimer' }).click();
+  await evt.waitFor({ state: 'detached', timeout: 8000 });
+  await shot('08b-delete');
+
+  // Modifier la fiche d'un membre (anniversaire / prénom) — responsable
+  await page.getByRole('button', { name: 'Famille' }).click();
+  await page.getByText('Grands-parents').waitFor({ timeout: 8000 });
+  await page.getByRole('button', { name: /Hélène/ }).first().click();
+  await page.getByText('Modifier la fiche').waitFor({ timeout: 8000 });
+  await page.getByPlaceholder('Prénom').fill('Hélène-Marie');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByText('Hélène-Marie').first().waitFor({ timeout: 8000 });
+  await shot('08c-edit-membre');
 
   // Créer une nouvelle famille (contexte vierge → écran de connexion)
   const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });

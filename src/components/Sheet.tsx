@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import styles from './Sheet.module.css';
 
@@ -19,7 +20,8 @@ export function Sheet({ open, onClose, title, children }: Props) {
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+
+  const sheet = (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.panel} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className={styles.head}>
@@ -32,4 +34,9 @@ export function Sheet({ open, onClose, title, children }: Props) {
       </div>
     </div>
   );
+
+  // Monte la feuille au niveau du cadre (hors du contexte d'empilement des
+  // écrans) pour qu'elle recouvre la barre d'onglets. Repli : rendu en place.
+  const root = typeof document !== 'undefined' && document.getElementById('app-sheet-root');
+  return root ? createPortal(sheet, root) : sheet;
 }

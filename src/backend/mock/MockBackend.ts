@@ -318,6 +318,19 @@ export class MockBackend implements Backend {
     return [...this.members];
   }
 
+  async updateMember(memberId: string, patch: { name?: string; relation?: string; birthDate?: string }): Promise<void> {
+    const m = this.members.find((x) => x.id === memberId);
+    if (!m) throw new Error('Membre introuvable.');
+    if (patch.name !== undefined && patch.name.trim()) {
+      m.name = patch.name.trim();
+      m.initials = m.name.slice(0, 2);
+    }
+    if (patch.relation !== undefined) m.relation = patch.relation.trim() || undefined;
+    if (patch.birthDate !== undefined) m.birthDate = patch.birthDate || undefined;
+    this.save();
+    this.emitLive();
+  }
+
   /* ── Invitations ─────────────────────────────────────────── */
   async listInvitations(): Promise<Invitation[]> {
     return [...this.invitations].sort((a, b) => b.createdAt - a.createdAt);
@@ -434,6 +447,18 @@ export class MockBackend implements Backend {
     const post = this.posts.find((p) => p.id === postId);
     if (!post || !text.trim()) return;
     post.comments.push({ id: rid('c'), authorId: me.id, text: text.trim(), createdAt: Date.now() });
+    this.save();
+    this.emitFeed();
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    const me = this.requireMember();
+    const post = this.posts.find((p) => p.id === postId);
+    if (!post) return;
+    if (post.authorId !== me.id && me.role !== 'admin') {
+      throw new Error('Seuls l’auteur ou un responsable peuvent supprimer.');
+    }
+    this.posts = this.posts.filter((p) => p.id !== postId);
     this.save();
     this.emitFeed();
   }

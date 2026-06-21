@@ -64,6 +64,7 @@ try {
     if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
   });
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+  page.on('dialog', (d) => d.accept()); // confirmations (suppression…)
   const shot = (n) => page.screenshot({ path: `${OUT}${n}.png` });
 
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -104,6 +105,22 @@ try {
   await page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first().waitFor({ timeout: 10000 });
   await page.waitForTimeout(400);
   await shot('06-after-post');
+
+  // Modifier sa propre fiche → updateDoc members/{uid} sous la règle « update self »
+  await page.getByRole('button', { name: 'Famille' }).click();
+  await page.getByRole('button', { name: 'Modifier la fiche de Camille' }).first().click();
+  await page.getByText('Modifier la fiche').waitFor({ timeout: 10000 });
+  await page.getByPlaceholder('Mère, Grand-père, Fille…').fill('Cousine');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByText('Cousine').first().waitFor({ timeout: 10000 });
+  await shot('06b-edit-membre');
+
+  // Supprimer son propre post → deleteDoc posts/{id} sous la règle « auteur »
+  await page.getByRole('button', { name: 'Fil' }).click();
+  const fbPost = page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first();
+  await fbPost.getByRole('button', { name: 'Supprimer' }).click();
+  await fbPost.waitFor({ state: 'detached', timeout: 10000 });
+  await shot('06c-delete');
 
   // Créer une NOUVELLE famille (Auth anonyme + création famille/membre sous les règles)
   const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });

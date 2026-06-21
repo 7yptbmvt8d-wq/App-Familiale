@@ -39,12 +39,17 @@ interface AppValue {
   setSharing: (mode: SharingMode) => Promise<void>;
   upsertGeofence: (input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }) => Promise<void>;
   createPost: (input: CreatePostInput) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
   toggleFavorite: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
+  updateMember: (memberId: string, patch: { name?: string; relation?: string; birthDate?: string }) => Promise<void>;
   createInvitation: (input: { role: Role; label?: string }) => Promise<Invitation>;
   revokeInvitation: (id: string) => Promise<void>;
   listInvitations: () => Promise<Invitation[]>;
 }
+
+/** Mêmes initiales que les backends (deux premières lettres du nom). */
+const deriveInitials = (name: string) => name.trim().slice(0, 2);
 
 const Ctx = createContext<AppValue | null>(null);
 
@@ -180,8 +185,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const createPost = useCallback((input: CreatePostInput) => backendRef.current!.createPost(input), []);
+  const deletePost = useCallback((postId: string) => backendRef.current!.deletePost(postId), []);
   const toggleFavorite = useCallback((postId: string) => backendRef.current!.toggleFavorite(postId), []);
   const addComment = useCallback((postId: string, text: string) => backendRef.current!.addComment(postId, text), []);
+
+  const updateMember = useCallback(
+    async (memberId: string, patch: { name?: string; relation?: string; birthDate?: string }) => {
+      await backendRef.current!.updateMember(memberId, patch);
+      // Reflète immédiatement le changement (liste des membres + session si c'est moi).
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === memberId
+            ? { ...m, ...patch, initials: patch.name ? deriveInitials(patch.name) : m.initials }
+            : m,
+        ),
+      );
+      setSession((prev) =>
+        prev && prev.member.id === memberId
+          ? {
+              ...prev,
+              member: {
+                ...prev.member,
+                ...patch,
+                initials: patch.name ? deriveInitials(patch.name) : prev.member.initials,
+              },
+            }
+          : prev,
+      );
+    },
+    [],
+  );
+
   const createInvitation = useCallback(
     (input: { role: Role; label?: string }) => backendRef.current!.createInvitation(input),
     [],
@@ -205,8 +239,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSharing,
     upsertGeofence,
     createPost,
+    deletePost,
     toggleFavorite,
     addComment,
+    updateMember,
     createInvitation,
     revokeInvitation,
     listInvitations,

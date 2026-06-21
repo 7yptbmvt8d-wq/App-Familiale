@@ -81,3 +81,75 @@
   color: var(--text-meta);
   font-family: var(--mono);
 }
+
+/* ── Fiche modifiable (responsable ou soi-même) ─────────── */
+.editable {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.editable:active {
+  transform: translateY(1px);
+  box-shadow: var(--sh-card);
+}
+.editBadge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sand-deep);
+  color: var(--text-soft);
+  display: grid;
+  place-items: center;
+}
+
+/* ── Feuille « Modifier la fiche » ──────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field input {
+  background: var(--sand-app);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  font-family: inherit;
+}
+.field input:focus {
+  border-color: var(--terracotta);
+}
+.clearBirth {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  padding: 2px 0;
+}
+.formError {
+  font-size: 13px;
+  color: var(--terracotta-deep);
+}
+.save {
+  background: var(--terracotta);
+  color: var(--card-2);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px;
+  border-radius: 14px;
+  min-height: 48px;
+}
+.save:disabled {
+  opacity: 0.6;
+}
+

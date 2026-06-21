@@ -95,6 +95,19 @@
   background: rgba(196, 98, 63, 0.1);
   border-color: rgba(196, 98, 63, 0.25);
 }
+.del {
+  margin-left: auto;
+  color: var(--text-meta);
+  padding: 6px 10px;
+}
+.del:active {
+  color: var(--terracotta-deep);
+  background: rgba(196, 98, 63, 0.1);
+  border-color: rgba(196, 98, 63, 0.25);
+}
+.del:disabled {
+  opacity: 0.5;
+}
 
 /* ── Commentaires ───────────────────────────────────────── */
 .comments {
