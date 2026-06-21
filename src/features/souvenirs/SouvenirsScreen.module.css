@@ -25,7 +25,6 @@
   gap: 16px 14px;
   padding: 6px 18px 12px;
 }
-
 .polaroid {
   background: var(--card-2);
   padding: 8px 8px 10px;
@@ -49,10 +48,8 @@
   color: var(--text-meta);
   margin-top: 3px;
 }
-
 .empty {
   font-size: 13px;
   color: var(--text-meta);
-  padding: 16px;
-  text-align: center;
+  padding: 6px 16px 16px;
 }

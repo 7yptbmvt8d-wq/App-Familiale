@@ -18,6 +18,8 @@ type IconName =
   | 'users'
   | 'sparkle'
   | 'ticket'
+  | 'feed'
+  | 'camera'
   | 'logout';
 
 interface Props {
@@ -182,6 +184,23 @@ export function Icon({ name, size = 22, filled = false, stroke = 1.8, className 
         <svg {...p}>
           <path d="M4 7.5h16v3a1.7 1.7 0 0 0 0 3.4v3.6H4v-3.6a1.7 1.7 0 0 0 0-3.4z" />
           <path d="M13 7.5v9" strokeDasharray="1.4 2.2" />
+        </svg>
+      );
+    case 'feed':
+      return (
+        <svg {...p}>
+          <rect x="4" y="4.5" width="16" height="6.4" rx="2" fill={fc} />
+          <rect x="4" y="13.1" width="16" height="6.4" rx="2" fill={fc} />
+        </svg>
+      );
+    case 'camera':
+      return (
+        <svg {...p}>
+          <path
+            d="M4 8.5h3l1.2-2h6.6l1.2 2H20a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 19.5H4A1.5 1.5 0 0 1 2.5 18V10A1.5 1.5 0 0 1 4 8.5z"
+            fill={fc}
+          />
+          <circle cx="12" cy="13.5" r="3.1" fill={filled ? '#FBF6EE' : 'none'} stroke={filled ? 'none' : 'currentColor'} />
         </svg>
       );
     case 'logout':

@@ -40,7 +40,6 @@ async function waitForServer() {
   throw new Error('Serveur preview indisponible');
 }
 
-// Bruit réseau externe (police de caractères via CDN) — non bloquant.
 const IGNORE = [/ERR_CERT_AUTHORITY_INVALID/, /fonts\.g(oogleapis|static)/, /Failed to load resource/];
 
 await waitForServer();
@@ -63,42 +62,34 @@ try {
   // Connexion démo (responsable)
   await page.getByRole('button', { name: /Entrer comme Hélène/ }).click();
   await page.getByText('Bonjour Hélène').waitFor({ timeout: 8000 });
-  await shot('02-home');
+  await shot('02-fil');
 
-  // Carte temps réel
-  await page.getByRole('button', { name: 'Carte' }).click();
-  await page.getByText('État du foyer').waitFor({ timeout: 8000 });
-  await page.waitForTimeout(1500);
-  await shot('03-map');
+  // Souvenirs
+  await page.getByRole('button', { name: 'Souvenirs' }).click();
+  await page.getByText('Souvenir du jour').waitFor({ timeout: 8000 });
+  await shot('03-souvenirs');
 
-  // Agenda / Albums / Arbre
-  await page.getByRole('button', { name: 'Agenda' }).click();
-  await page.getByText('Anniversaires').waitFor({ timeout: 8000 });
-  await shot('04-agenda');
-  await page.getByRole('button', { name: 'Albums' }).click();
-  await page.waitForTimeout(400);
-  await shot('05-albums');
-  await page.getByRole('button', { name: 'Arbre' }).click();
-  await page.waitForTimeout(400);
-  await shot('06-tree');
+  // Famille
+  await page.getByRole('button', { name: 'Famille' }).click();
+  await page.getByText('Grands-parents').waitFor({ timeout: 8000 });
+  await shot('04-famille');
 
-  // Publication dans le fil
-  await page.getByRole('button', { name: 'Accueil' }).click();
-  await page.getByRole('button', { name: /Partager un moment/ }).click();
-  await page.getByRole('button', { name: 'Note' }).click();
-  await page.locator('textarea').fill('Test end-to-end.');
-  await page.getByRole('button', { name: 'Publier dans le fil' }).click();
-  await page.waitForTimeout(600);
-  await shot('07-after-post');
+  // Publier un récit dans le fil
+  await page.getByRole('button', { name: 'Fil' }).click();
+  await page.getByRole('button', { name: /Partager un souvenir/ }).click();
+  await page.getByRole('button', { name: 'Récit' }).click();
+  await page.locator('textarea').fill('Le mariage de tante Sofia, sous la pluie et heureux quand même.');
+  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
+  await page.locator('article').filter({ hasText: 'mariage de tante Sofia' }).first().waitFor({ timeout: 8000 });
+  await shot('05-recit');
 
-  // Verrou de partage d'un compte mineur
-  await page.evaluate(() => localStorage.clear());
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: /Entrer comme Léa/ }).click();
-  await page.getByText('Bonjour Léa').waitFor({ timeout: 8000 });
-  await page.locator('header button[aria-label="Réglages"]').click();
-  await page.getByText('Obligatoire et non désactivable', { exact: false }).waitFor({ timeout: 8000 });
-  await shot('08-minor-lock');
+  // Publier une photo : upload réel → redimensionnement canvas → rendu
+  await page.getByRole('button', { name: /Partager un souvenir/ }).click();
+  await page.setInputFiles('input[type="file"]', 'public/icons/icon-192.png');
+  await page.getByPlaceholder("étretat · falaise d'aval").fill('vacances 2019 · le lac');
+  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
+  await page.locator('article').filter({ hasText: 'vacances 2019' }).first().waitFor({ timeout: 8000 });
+  await shot('06-photo');
 
   console.log(`\nParcours OK — ${errors.length} erreur(s) applicative(s).`);
   errors.forEach((e) => console.log('  -', e));

@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { Avatar } from '../../components/Avatar';
 import type { Member } from '../../backend/types';
 import { useApp } from '../../store/AppContext';
-import styles from './TreeScreen.module.css';
+import styles from './FamilleScreen.module.css';
 
 function birthYear(m: Member): string {
   return m.birthDate ? new Date(m.birthDate).getFullYear().toString() : '';
 }
 
-export function TreeScreen() {
+export function FamilleScreen() {
   const { members } = useApp();
 
   const groups = useMemo(() => {
@@ -29,7 +29,7 @@ export function TreeScreen() {
   return (
     <div className={styles.screen}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Arbre</h1>
+        <h1 className={styles.title}>Famille</h1>
         <p className={styles.sub}>{members.length} membres · mémoire intergénérationnelle</p>
       </header>
 

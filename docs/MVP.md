@@ -2,6 +2,10 @@
 
 > Décision produit : un **seul héros**. On préserve et on **transmet la mémoire**
 > de la famille. Tout le reste est repoussé ou abandonné.
+>
+> **État : Phase 1 (socle) livrée** — géoloc retirée, fil de souvenirs (photo/récit),
+> upload photo réel, 3 onglets (Fil · Souvenirs · Famille), PWA installable.
+> Vérifié en navigateur réel sur les deux backends (mock & Firebase émulateur).
 
 **Boucle cœur :** un membre ajoute un souvenir → il vit dans une timeline partagée →
 la famille réagit / complète → d'anciens souvenirs ressurgissent (« il y a N ans »).

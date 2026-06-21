@@ -2,11 +2,9 @@ import { Icon } from './Icon';
 import styles from './TabBar.module.css';
 
 const TABS = [
-  { id: 'home', label: 'Accueil', icon: 'home' },
-  { id: 'map', label: 'Carte', icon: 'pin' },
-  { id: 'agenda', label: 'Agenda', icon: 'calendar' },
-  { id: 'albums', label: 'Albums', icon: 'photo' },
-  { id: 'tree', label: 'Arbre', icon: 'tree' },
+  { id: 'fil', label: 'Fil', icon: 'feed' },
+  { id: 'souvenirs', label: 'Souvenirs', icon: 'sparkle' },
+  { id: 'famille', label: 'Famille', icon: 'tree' },
 ] as const;
 
 export type TabId = (typeof TABS)[number]['id'];

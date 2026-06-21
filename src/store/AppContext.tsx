@@ -12,13 +12,11 @@ import type {
   Backend,
   CreatePostInput,
   Invitation,
-  LiveMember,
   Member,
   NewProfile,
   Post,
   Role,
   Session,
-  SharingMode,
 } from '../backend/types';
 
 interface AppValue {
@@ -26,7 +24,6 @@ interface AppValue {
   backendKind: 'mock' | 'firebase';
   session: Session | null;
   me: Member | null;
-  live: LiveMember[];
   feed: Post[];
   members: Member[];
   memberById: (id: string) => Member | undefined;
@@ -34,7 +31,6 @@ interface AppValue {
   join: (code: string, profile: NewProfile) => Promise<void>;
   demoSignIn: (memberId: string) => Promise<void>;
   signOut: () => Promise<void>;
-  setSharing: (mode: SharingMode) => Promise<void>;
   createPost: (input: CreatePostInput) => Promise<void>;
   toggleFavorite: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
@@ -49,7 +45,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const backendRef = useRef<Backend | null>(null);
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [live, setLive] = useState<LiveMember[]>([]);
   const [feed, setFeed] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -85,28 +80,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Abonnements temps réel une fois connecté.
+  // Abonnement au fil une fois connecté.
   const sessionMemberId = session?.member.id;
   useEffect(() => {
     const b = backendRef.current;
     if (!b || !sessionMemberId) {
-      setLive([]);
       setFeed([]);
       return;
     }
-    const u1 = b.subscribeLive(setLive);
-    const u2 = b.subscribeFeed(setFeed);
+    const unsub = b.subscribeFeed(setFeed);
     b.listMembers().then(setMembers).catch(() => {});
-    return () => {
-      u1();
-      u2();
-    };
+    return unsub;
   }, [sessionMemberId]);
 
-  const memberById = useCallback(
-    (id: string): Member | undefined => live.find((m) => m.id === id) ?? members.find((m) => m.id === id),
-    [live, members],
-  );
+  const memberById = useCallback((id: string): Member | undefined => members.find((m) => m.id === id), [members]);
 
   const join = useCallback(async (code: string, profile: NewProfile) => {
     setSession(await backendRef.current!.joinWithCode(code, profile));
@@ -120,16 +107,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await backendRef.current!.signOut();
     setSession(null);
   }, []);
-
-  const setSharing = useCallback(
-    async (mode: SharingMode) => {
-      const me = session?.member;
-      if (!me) return;
-      await backendRef.current!.setSharing(me.id, mode);
-      setSession((prev) => (prev ? { ...prev, member: { ...prev.member, sharing: mode } } : prev));
-    },
-    [session?.member],
-  );
 
   const createPost = useCallback((input: CreatePostInput) => backendRef.current!.createPost(input), []);
   const toggleFavorite = useCallback((postId: string) => backendRef.current!.toggleFavorite(postId), []);
@@ -146,14 +123,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     backendKind: BACKEND_KIND,
     session,
     me: session?.member ?? null,
-    live,
     feed,
     members,
     memberById,
     join,
     demoSignIn,
     signOut,
-    setSharing,
     createPost,
     toggleFavorite,
     addComment,

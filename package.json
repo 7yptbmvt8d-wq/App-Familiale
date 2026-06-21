@@ -12,7 +12,8 @@
     "e2e": "vite build && node e2e/smoke.mjs",
     "emulators": "firebase emulators:start --only auth,firestore,storage --project demo-famille",
     "seed:emulator": "firebase emulators:exec --only auth,firestore,storage --project demo-famille \"node scripts/seed-emulator.mjs\"",
-    "e2e:firebase": "firebase emulators:exec --only auth,firestore,storage --project demo-famille \"node e2e/firebase-run.mjs\""
+    "e2e:firebase": "firebase emulators:exec --only auth,firestore,storage --project demo-famille \"node e2e/firebase-run.mjs\"",
+    "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
     "firebase": "^11.1.0",
@@ -27,6 +28,7 @@
     "firebase-tools": "^15.22.0",
     "playwright": "^1.49.1",
     "typescript": "^5.6.3",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vite-plugin-pwa": "^0.21.1"
   }
 }

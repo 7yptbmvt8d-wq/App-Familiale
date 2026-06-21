@@ -75,20 +75,20 @@ try {
   await page.getByPlaceholder('Camille').fill('Camille');
   await page.getByRole('button', { name: 'Rejoindre la famille' }).click();
   await page.getByText('Bonjour Camille').waitFor({ timeout: 15000 });
-  await shot('02-home');
+  await shot('02-fil');
 
-  // Carte temps réel (lecture Firestore : membres + positions seedées)
-  await page.getByRole('button', { name: 'Carte' }).click();
-  await page.getByText('État du foyer').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(1200);
-  await shot('03-map');
+  // Souvenirs (lecture Firestore : posts seedés + souvenir du jour)
+  await page.getByRole('button', { name: 'Souvenirs' }).click();
+  await page.getByText('Souvenir du jour').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(600);
+  await shot('03-souvenirs');
 
-  // Publier une note → écriture Firestore → doit revenir via onSnapshot
-  await page.getByRole('button', { name: 'Accueil' }).click();
-  await page.getByRole('button', { name: /Partager un moment/ }).click();
-  await page.getByRole('button', { name: 'Note' }).click();
+  // Publier un récit → écriture Firestore → doit revenir via onSnapshot
+  await page.getByRole('button', { name: 'Fil' }).click();
+  await page.getByRole('button', { name: /Partager un souvenir/ }).click();
+  await page.getByRole('button', { name: 'Récit' }).click();
   await page.locator('textarea').fill('Bonjour depuis Firestore (émulateur).');
-  await page.getByRole('button', { name: 'Publier dans le fil' }).click();
+  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
   // Le post doit revenir via onSnapshot dans une carte du fil (≠ le textarea).
   await page.locator('article').filter({ hasText: 'Bonjour depuis Firestore' }).first().waitFor({ timeout: 10000 });
   await page.waitForTimeout(400);

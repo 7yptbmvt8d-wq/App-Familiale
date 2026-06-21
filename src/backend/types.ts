@@ -1,30 +1,10 @@
 /* ───────────────────────────────────────────────────────────
    Types du domaine + contrat Backend.
+   MVP « Mémoire familiale » : fil de souvenirs, pas de géolocalisation.
    Une seule interface, deux implémentations : mock & firebase.
    ─────────────────────────────────────────────────────────── */
 
-export type Role = 'admin' | 'adult' | 'minor';
-
-/** Mode de partage de localisation.
- *  - auto      : permanent et NON désactivable (mineurs)
- *  - optin     : permanent, choisi par l'adulte
- *  - temporary : limité à une durée / un trajet
- *  - off       : aucun partage (interdit pour les mineurs)
- */
-export type SharingMode = 'auto' | 'optin' | 'temporary' | 'off';
-
-export type GeoStatus = 'home' | 'nearby' | 'away' | 'unknown';
-
-export type GeofenceKind = 'home' | 'school' | 'work' | 'custom';
-
-export interface Geofence {
-  id: string;
-  label: string; // « Maison », « École », « Travail »
-  kind: GeofenceKind;
-  lat: number;
-  lng: number;
-  radius: number; // mètres
-}
+export type Role = 'admin' | 'member';
 
 export interface Member {
   id: string;
@@ -35,30 +15,9 @@ export interface Member {
   birthDate?: string; // ISO yyyy-mm-dd
   color: string; // couleur d'avatar (fallback sans photo)
   initials: string;
-  sharing: SharingMode;
 }
 
-export interface Location {
-  memberId: string;
-  lat: number;
-  lng: number;
-  updatedAt: number; // epoch ms
-  battery?: number; // 0..1
-  speed?: number; // km/h
-}
-
-/** Membre enrichi des données temps réel (calculées côté lecture). */
-export interface LiveMember extends Member {
-  location?: Location;
-  status: GeoStatus;
-  zone?: Geofence; // zone courante si à l'intérieur d'un géorepère
-  distanceMeters: number; // distance jusqu'à la maison
-  etaMinutes?: number; // estimation d'arrivée si en rapprochement
-}
-
-export type PostType = 'photo' | 'text' | 'event' | 'memory';
-
-export type Room = 'general' | 'parents' | 'enfants' | 'organisation' | 'vacances';
+export type PostType = 'photo' | 'text' | 'memory';
 
 export interface Comment {
   id: string;
@@ -72,19 +31,14 @@ export interface Post {
   familyId: string;
   authorId: string;
   type: PostType;
-  room: Room;
   text?: string;
   caption?: string; // légende monospace du placeholder photo
   imageUrl?: string; // photo réelle (Storage) ou data URL (mock)
   tilt?: number; // inclinaison du polaroïd (deg)
-  createdAt: number;
+  createdAt: number; // date de publication
+  memoryDate?: number; // date du souvenir (« quand c'était »), si différente
   favorites: string[]; // memberIds
   comments: Comment[];
-  // spécifique « event »
-  eventDate?: number;
-  eventLocation?: string;
-  // spécifique « memory »
-  yearsAgo?: number;
 }
 
 export interface Invitation {
@@ -92,7 +46,7 @@ export interface Invitation {
   familyId: string;
   code: string;
   role: Role;
-  label?: string; // ex. « Pour Mamie »
+  label?: string;
   createdBy: string;
   createdAt: number;
   status: 'pending' | 'accepted';
@@ -101,7 +55,6 @@ export interface Invitation {
 export interface Family {
   id: string;
   name: string;
-  geofences: Geofence[];
 }
 
 export interface Session {
@@ -117,12 +70,10 @@ export interface NewProfile {
 
 export interface CreatePostInput {
   type: PostType;
-  room?: Room;
   text?: string;
   caption?: string;
   imageUrl?: string;
-  eventDate?: number;
-  eventLocation?: string;
+  memoryDate?: number;
 }
 
 /** Contrat unique partagé par le mock et Firebase. */
@@ -143,16 +94,12 @@ export interface Backend {
   createInvitation(input: { role: Role; label?: string }): Promise<Invitation>;
   revokeInvitation(id: string): Promise<void>;
 
-  /* Localisation temps réel */
-  subscribeLive(cb: (members: LiveMember[]) => void): () => void;
-  setSharing(memberId: string, mode: SharingMode): Promise<void>;
-
-  /* Fil familial */
+  /* Fil de souvenirs */
   subscribeFeed(cb: (posts: Post[]) => void): () => void;
   createPost(input: CreatePostInput): Promise<void>;
   toggleFavorite(postId: string): Promise<void>;
   addComment(postId: string, text: string): Promise<void>;
 
-  /** Libère les ressources (timers, écouteurs). */
+  /** Libère les ressources (écouteurs). */
   dispose(): void;
 }

@@ -3,8 +3,7 @@ import { Avatar } from '../../components/Avatar';
 import { Icon } from '../../components/Icon';
 import { PhotoPlaceholder } from '../../components/PhotoPlaceholder';
 import type { Post } from '../../backend/types';
-import { formatDateLong, relativeTime } from '../../lib/format';
-import { ROOM_LABELS } from '../../lib/labels';
+import { relativeTime, souvenirLabel } from '../../lib/format';
 import { useApp } from '../../store/AppContext';
 import styles from './FeedItem.module.css';
 
@@ -33,7 +32,7 @@ export function FeedItem({ post }: { post: Post }) {
           {relativeTime(post.createdAt)}
         </span>
       </div>
-      {post.room !== 'general' && <span className={styles.room}>{ROOM_LABELS[post.room]}</span>}
+      {post.memoryDate && <span className={styles.when}>{souvenirLabel(post.memoryDate)}</span>}
     </div>
   );
 
@@ -83,7 +82,7 @@ export function FeedItem({ post }: { post: Post }) {
       <article className={`${styles.card} ${styles.memory}`}>
         <div className={styles.memoryHead}>
           <Icon name="sparkle" size={15} />
-          <span className="overline">il y a {post.yearsAgo} ans</span>
+          <span className="overline">{souvenirLabel(post.memoryDate ?? post.createdAt)}</span>
         </div>
         {(post.caption || post.imageUrl) && (
           <div className={styles.polaroid} style={{ transform: `rotate(${post.tilt ?? -2}deg)` }}>
@@ -97,35 +96,6 @@ export function FeedItem({ post }: { post: Post }) {
           {actions}
         </div>
         {comments}
-      </article>
-    );
-  }
-
-  /* ── Événement (ticket) ─────────────────────────────────── */
-  if (post.type === 'event') {
-    return (
-      <article className={`${styles.card} ${styles.ticket}`}>
-        <div className={styles.ticketBody}>
-          <span className="overline" style={{ color: 'var(--ocre)' }}>
-            Événement · {ROOM_LABELS[post.room]}
-          </span>
-          <h3 className={styles.ticketTitle}>{post.text}</h3>
-          <div className={styles.ticketMeta}>
-            <span>
-              <Icon name="calendar" size={15} /> {post.eventDate ? formatDateLong(post.eventDate) : '—'}
-            </span>
-            {post.eventLocation && (
-              <span>
-                <Icon name="pin" size={15} /> {post.eventLocation}
-              </span>
-            )}
-          </div>
-          {actions}
-          {comments}
-        </div>
-        <div className={styles.stub}>
-          <Icon name="ticket" size={20} />
-        </div>
       </article>
     );
   }
@@ -146,7 +116,7 @@ export function FeedItem({ post }: { post: Post }) {
     );
   }
 
-  /* ── Note (texte) ───────────────────────────────────────── */
+  /* ── Récit (texte) ──────────────────────────────────────── */
   return (
     <article className={`${styles.card} ${styles.note}`}>
       {header}
