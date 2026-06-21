@@ -4,6 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
+  // En CI Pages, VITE_BASE=/app-familiale/ ; en local, racine.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [
     react(),
     VitePWA({
@@ -17,7 +19,8 @@ export default defineConfig({
         theme_color: '#C4623F',
         background_color: '#F3EADD',
         display: 'standalone',
-        start_url: '/',
+        start_url: './',
+        scope: './',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
