@@ -18,8 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Démo : backend mock (aucune clé). Sous-chemin du dépôt pour Pages.
-      VITE_BASE: /app-familiale/
+      # Démo : backend mock (aucune clé). Sous-chemin du dépôt pour Pages
+      # (casse exacte du nom de dépôt).
+      VITE_BASE: /App-Familiale/
       # Évite le téléchargement des navigateurs Playwright pendant npm ci.
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
