@@ -2,36 +2,23 @@ import { useEffect, useState } from 'react';
 import { Avatar } from '../../components/Avatar';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
-import type { Invitation, Role, SharingMode } from '../../backend/types';
-import { ROLE_LABELS, SHARING_LABELS } from '../../lib/labels';
+import type { Invitation, Role } from '../../backend/types';
+import { ROLE_LABELS } from '../../lib/labels';
 import { useApp } from '../../store/AppContext';
 import styles from './SettingsSheet.module.css';
 
-const ADULT_MODES: SharingMode[] = ['optin', 'temporary', 'off'];
-
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { me, backendKind, setSharing, signOut, listInvitations, createInvitation, revokeInvitation } = useApp();
+  const { me, backendKind, signOut, listInvitations, createInvitation, revokeInvitation } = useApp();
   const [invites, setInvites] = useState<Invitation[]>([]);
   const [inviteRole, setInviteRole] = useState<Role>('adult');
-  const [error, setError] = useState('');
 
   const isAdmin = me?.role === 'admin';
-  const isMinor = me?.role === 'minor';
 
   useEffect(() => {
     if (open && isAdmin) listInvitations().then(setInvites).catch(() => {});
   }, [open, isAdmin, listInvitations]);
 
   if (!me) return null;
-
-  const changeSharing = async (mode: SharingMode) => {
-    setError('');
-    try {
-      await setSharing(mode);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur');
-    }
-  };
 
   const generate = async () => {
     const inv = await createInvitation({ role: inviteRole, label: ROLE_LABELS[inviteRole] });
@@ -47,7 +34,7 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
     <Sheet open={open} onClose={onClose} title="Réglages">
       {/* Profil */}
       <div className={styles.profile}>
-        <Avatar initials={me.initials} color={me.color} size={58} auto={isMinor} />
+        <Avatar initials={me.initials} color={me.color} size={58} />
         <div>
           <h3 className={styles.name}>{me.name}</h3>
           <p className={styles.sub}>
@@ -56,35 +43,6 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
           </p>
         </div>
       </div>
-
-      {/* Partage de localisation */}
-      <p className="overline" style={{ marginBottom: 8 }}>
-        Partage de localisation
-      </p>
-      {isMinor ? (
-        <div className={styles.locked}>
-          <Icon name="lock" size={18} />
-          <div>
-            <strong>Automatique</strong>
-            <p>Obligatoire et non désactivable pour un compte mineur.</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className={styles.segment}>
-            {ADULT_MODES.map((mode) => (
-              <button
-                key={mode}
-                className={`${styles.seg} ${me.sharing === mode ? styles.segOn : ''}`}
-                onClick={() => changeSharing(mode)}
-              >
-                {SHARING_LABELS[mode]}
-              </button>
-            ))}
-          </div>
-          {error && <p className={styles.error}>{error}</p>}
-        </>
-      )}
 
       {/* Invitations (admin) */}
       {isAdmin && (

@@ -1,31 +1,17 @@
-import { haversine, statusFromDistance, zoneFor } from '../../lib/geo';
 import type {
   Backend,
   CreatePostInput,
   Family,
-  GeofenceKind,
   Invitation,
-  LiveMember,
-  Location,
   Member,
   NewProfile,
   Post,
   Role,
   Session,
-  SharingMode,
 } from '../types';
-import {
-  FAMILY,
-  HOME,
-  SEED_INVITATIONS,
-  SEED_MEMBERS,
-  SEED_POSTS,
-  SEED_SIM,
-  type SimProfile,
-} from './data';
+import { FAMILY, SEED_INVITATIONS, SEED_MEMBERS, SEED_POSTS } from './data';
 
-const STORE_KEY = 'famille:mock:v3';
-const TICK_MS = 2500;
+const STORE_KEY = 'famille:mock:v4';
 
 interface PersistShape {
   sessionMemberId: string | null;
@@ -33,17 +19,6 @@ interface PersistShape {
   members: Member[];
   posts: Post[];
   invitations: Invitation[];
-}
-
-/** Décale un point de (dNorth, dEast) mètres. */
-function offset(lat: number, lng: number, dNorth: number, dEast: number) {
-  const dLat = dNorth / 111_320;
-  const dLng = dEast / (111_320 * Math.cos((lat * Math.PI) / 180));
-  return { lat: lat + dLat, lng: lng + dLng };
-}
-
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t;
 }
 
 function rid(prefix: string) {
@@ -57,12 +32,7 @@ export class MockBackend implements Backend {
   private invitations: Invitation[];
   private sessionMemberId: string | null;
 
-  private sim: Record<string, SimProfile> = {};
-  private locations: Record<string, Location> = {};
-
-  private liveSubs = new Set<(m: LiveMember[]) => void>();
   private feedSubs = new Set<(p: Post[]) => void>();
-  private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     const loaded = this.load();
@@ -71,14 +41,6 @@ export class MockBackend implements Backend {
     this.posts = loaded?.posts ?? structuredClone(SEED_POSTS);
     this.invitations = loaded?.invitations ?? structuredClone(SEED_INVITATIONS);
     this.sessionMemberId = loaded?.sessionMemberId ?? null;
-
-    // Profils de simulation : seed + défaut « maison » pour les membres ajoutés.
-    this.sim = structuredClone(SEED_SIM);
-    for (const m of this.members) {
-      if (!this.sim[m.id]) this.sim[m.id] = { mode: 'home', anchor: HOME, battery: 0.8 };
-    }
-    this.seedInitialPositions();
-    this.start();
   }
 
   /* ── Persistance ─────────────────────────────────────────── */
@@ -106,114 +68,8 @@ export class MockBackend implements Backend {
     }
   }
 
-  /* ── Moteur de simulation temps réel ─────────────────────── */
-  private seedInitialPositions() {
-    for (const m of this.members) {
-      const s = this.sim[m.id];
-      if (!s || s.mode === 'off') continue;
-      if (s.mode === 'commute' && s.from && s.to) {
-        const t = s.phase ?? 0.5;
-        this.locations[m.id] = {
-          memberId: m.id,
-          lat: lerp(s.from.lat, s.to.lat, t),
-          lng: lerp(s.from.lng, s.to.lng, t),
-          updatedAt: Date.now(),
-          battery: s.battery,
-          speed: s.speedKmh,
-        };
-      } else if (s.anchor) {
-        const p = offset(s.anchor.lat, s.anchor.lng, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
-        this.locations[m.id] = { memberId: m.id, ...p, updatedAt: Date.now(), battery: s.battery, speed: 0 };
-      }
-    }
-  }
-
-  private start() {
-    if (this.timer) return;
-    this.timer = setInterval(() => this.tick(), TICK_MS);
-  }
-
   dispose() {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
-    this.liveSubs.clear();
     this.feedSubs.clear();
-  }
-
-  private tick() {
-    const dt = TICK_MS / 1000;
-    for (const m of this.members) {
-      const s = this.sim[m.id];
-      if (!s || s.mode === 'off') continue;
-      s.battery = Math.max(0.05, s.battery - 0.0006);
-
-      if (s.mode === 'commute' && s.from && s.to) {
-        const pathLen = Math.max(1, haversine(s.from.lat, s.from.lng, s.to.lat, s.to.lng));
-        const step = ((s.speedKmh ?? 4) * 1000 * dt) / 3600 / pathLen;
-        let phase = (s.phase ?? 0) + step * (s.dir ?? 1);
-        if (phase >= 1) {
-          phase = 1;
-          s.dir = -1;
-        } else if (phase <= 0) {
-          phase = 0;
-          s.dir = 1;
-        }
-        s.phase = phase;
-        this.locations[m.id] = {
-          memberId: m.id,
-          lat: lerp(s.from.lat, s.to.lat, phase),
-          lng: lerp(s.from.lng, s.to.lng, phase),
-          updatedAt: Date.now(),
-          battery: s.battery,
-          speed: phase > 0 && phase < 1 ? s.speedKmh : 0,
-        };
-      } else if (s.anchor) {
-        const prev = this.locations[m.id] ?? { lat: s.anchor.lat, lng: s.anchor.lng };
-        // marche aléatoire douce, rappel vers l'ancre
-        const jitter = offset(prev.lat, prev.lng, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
-        const pull = 0.15;
-        this.locations[m.id] = {
-          memberId: m.id,
-          lat: lerp(jitter.lat, s.anchor.lat, pull),
-          lng: lerp(jitter.lng, s.anchor.lng, pull),
-          updatedAt: Date.now(),
-          battery: s.battery,
-          speed: Math.round(Math.random() * 2),
-        };
-      }
-    }
-    this.emitLive();
-  }
-
-  private computeLive(m: Member): LiveMember {
-    const loc = m.sharing === 'off' ? undefined : this.locations[m.id];
-    const home = this.family.geofences.find((g) => g.kind === 'home');
-    if (!loc || !home) {
-      return { ...m, status: 'unknown', distanceMeters: Infinity };
-    }
-    const distance = haversine(loc.lat, loc.lng, home.lat, home.lng);
-    const zone = zoneFor(loc, this.family.geofences);
-    const status = zone?.kind === 'home' ? 'home' : statusFromDistance(distance, home.radius);
-
-    let etaMinutes: number | undefined;
-    const s = this.sim[m.id];
-    if (s?.mode === 'commute' && s.dir === 1 && s.from && s.to && status !== 'home') {
-      const pathLen = haversine(s.from.lat, s.from.lng, s.to.lat, s.to.lng);
-      const remaining = (1 - (s.phase ?? 0)) * pathLen; // mètres jusqu'à la maison
-      const mPerMin = ((s.speedKmh ?? 4) * 1000) / 60;
-      if (mPerMin > 0) etaMinutes = remaining / mPerMin;
-    }
-
-    return { ...m, location: loc, status, zone, distanceMeters: distance, etaMinutes };
-  }
-
-  private liveSnapshot(): LiveMember[] {
-    return this.members.map((m) => this.computeLive(m));
-  }
-
-  private emitLive() {
-    const snap = this.liveSnapshot();
-    this.liveSubs.forEach((cb) => cb(snap));
   }
 
   private feedSnapshot(): Post[] {
@@ -256,15 +112,11 @@ export class MockBackend implements Backend {
       birthDate: profile.birthDate,
       color: '#B98A57',
       initials: name.slice(0, 2),
-      sharing: role === 'minor' ? 'auto' : 'optin',
     };
     this.members.push(member);
-    this.sim[member.id] = { mode: 'home', anchor: HOME, battery: 0.9 };
-    this.seedInitialPositions();
     invite.status = 'accepted';
     this.sessionMemberId = member.id;
     this.save();
-    this.emitLive();
     return { member, family: this.family };
   }
 
@@ -272,7 +124,7 @@ export class MockBackend implements Backend {
     const name = profile.name.trim();
     if (!name) throw new Error('Le prénom est requis.');
     const familyId = rid('fam');
-    this.family = { id: familyId, name: familyName.trim() || 'Ma famille', geofences: [] };
+    this.family = { id: familyId, name: familyName.trim() || 'Ma famille' };
     const member: Member = {
       id: rid('m'),
       familyId,
@@ -282,16 +134,12 @@ export class MockBackend implements Backend {
       birthDate: profile.birthDate,
       color: '#C4623F',
       initials: name.slice(0, 2),
-      sharing: 'optin',
     };
     this.members = [member];
     this.posts = [];
     this.invitations = [];
-    this.sim = {};
-    this.locations = {};
     this.sessionMemberId = member.id;
     this.save();
-    this.emitLive();
     this.emitFeed();
     return { member, family: this.family };
   }
@@ -328,7 +176,6 @@ export class MockBackend implements Backend {
     if (patch.relation !== undefined) m.relation = patch.relation.trim() || undefined;
     if (patch.birthDate !== undefined) m.birthDate = patch.birthDate || undefined;
     this.save();
-    this.emitLive();
   }
 
   /* ── Invitations ─────────────────────────────────────────── */
@@ -357,48 +204,6 @@ export class MockBackend implements Backend {
   async revokeInvitation(id: string): Promise<void> {
     this.invitations = this.invitations.filter((i) => i.id !== id || i.status === 'accepted');
     this.save();
-  }
-
-  /* ── Localisation temps réel ─────────────────────────────── */
-  subscribeLive(cb: (members: LiveMember[]) => void): () => void {
-    this.liveSubs.add(cb);
-    cb(this.liveSnapshot());
-    return () => this.liveSubs.delete(cb);
-  }
-
-  async setSharing(memberId: string, mode: SharingMode): Promise<void> {
-    const m = this.members.find((x) => x.id === memberId);
-    if (!m) throw new Error('Membre introuvable.');
-    if (m.role === 'minor' && mode !== 'auto') {
-      throw new Error('Le partage de localisation est obligatoire pour un compte mineur.');
-    }
-    m.sharing = mode;
-    this.save();
-    this.emitLive();
-  }
-
-  async updateLocation({ lat, lng, speed, battery }: { lat: number; lng: number; speed?: number; battery?: number }): Promise<void> {
-    const me = this.requireMember();
-    this.locations[me.id] = {
-      memberId: me.id,
-      lat,
-      lng,
-      speed: speed ?? 0,
-      battery: battery ?? this.locations[me.id]?.battery ?? 0.8,
-      updatedAt: Date.now(),
-    };
-    // Ancre la simulation sur la vraie position pour qu'elle ne dérive pas.
-    this.sim[me.id] = { mode: 'home', anchor: { lat, lng }, battery: battery ?? 0.8 };
-    this.emitLive();
-  }
-
-  async upsertGeofence({ kind, label, lat, lng, radius }: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }): Promise<void> {
-    const me = this.requireMember();
-    if (me.role !== 'admin') throw new Error('Seul un responsable peut définir les lieux.');
-    const gf = { id: `gf-${kind}`, kind, label, lat, lng, radius: radius ?? 120 };
-    this.family.geofences = [...this.family.geofences.filter((g) => g.kind !== kind), gf];
-    this.save();
-    this.emitLive();
   }
 
   /* ── Fil de souvenirs & événements ───────────────────────── */

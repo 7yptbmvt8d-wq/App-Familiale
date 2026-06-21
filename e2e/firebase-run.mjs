@@ -58,7 +58,7 @@ try {
   await waitForServer();
 
   browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });
+  const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on('console', (m) => {
     if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
@@ -77,12 +77,6 @@ try {
   await page.getByRole('button', { name: 'Rejoindre la famille' }).click();
   await page.getByText('Bonjour Camille').waitFor({ timeout: 15000 });
   await shot('02-fil');
-
-  // Carte temps réel (lecture Firestore : membres + positions seedées)
-  await page.getByRole('button', { name: 'Carte' }).click();
-  await page.getByText('État du foyer').waitFor({ timeout: 10000 });
-  await page.waitForTimeout(1200);
-  await shot('03-map');
 
   // Agenda (événement seedé + anniversaires)
   await page.getByRole('button', { name: 'Agenda' }).click();
@@ -123,7 +117,7 @@ try {
   await shot('06c-delete');
 
   // Créer une NOUVELLE famille (Auth anonyme + création famille/membre sous les règles)
-  const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2, permissions: ['geolocation'], geolocation: { latitude: 45.764, longitude: 4.8357 } });
+  const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
   const p2 = await ctx2.newPage();
   p2.on('console', (m) => {
     if (m.type() === 'error' && !IGNORE.some((re) => re.test(m.text()))) errors.push('console: ' + m.text());
@@ -136,12 +130,6 @@ try {
   await p2.getByRole('button', { name: 'Créer ma famille' }).last().click();
   await p2.getByText('Bonjour Alex').waitFor({ timeout: 15000 });
   await p2.screenshot({ path: `${OUT}07-create-family.png` });
-
-  // Définir la Maison → updateDoc des géorepères de la famille (admin) sur l'émulateur
-  await p2.getByRole('button', { name: 'Carte' }).click();
-  await p2.getByRole('button', { name: /Définis ta Maison/ }).click();
-  await p2.getByRole('button', { name: /Définis ta Maison/ }).waitFor({ state: 'detached', timeout: 12000 });
-  await p2.screenshot({ path: `${OUT}08-set-home.png` });
   await ctx2.close();
 
   console.log(`\nFirebase e2e OK — ${errors.length} erreur(s) applicative(s).`);

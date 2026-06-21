@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Infrastructure familiale privée — fil de vie, géolocalisation, agenda, albums, arbre.",
+  "description": "Infrastructure familiale privée — fil de souvenirs, événements, anniversaires, arbre.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

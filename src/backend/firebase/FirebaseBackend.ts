@@ -21,22 +21,16 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadString } from 'firebase/storage';
 
-import { haversine, statusFromDistance, zoneFor } from '../../lib/geo';
 import type {
   Backend,
   CreatePostInput,
   Family,
-  Geofence,
-  GeofenceKind,
   Invitation,
-  LiveMember,
-  Location,
   Member,
   NewProfile,
   Post,
   Role,
   Session,
-  SharingMode,
 } from '../types';
 import { auth, db, storage } from './app';
 
@@ -45,19 +39,16 @@ import { auth, db, storage } from './app';
  *
  * Modèle Firestore :
  *   users/{uid}                    → { familyId, memberId }
- *   families/{fid}                 → { name, geofences[] }
+ *   families/{fid}                 → { name }
  *   families/{fid}/members/{uid}   → Member
- *   families/{fid}/locations/{uid} → Location (mise à jour par l'app mobile)
  *   families/{fid}/posts/{pid}     → Post (souvenirs & événements)
  *   inviteCodes/{CODE}             → Invitation (racine ; id = code)
  *
  * Auth : connexion anonyme liée à un membre via le code d'invitation.
- * Les règles (firestore.rules) imposent l'invitation et le partage obligatoire
- * pour les mineurs.
+ * Les règles (firestore.rules) imposent l'accès sur invitation.
  */
 export class FirebaseBackend implements Backend {
   private ctx: { familyId: string; memberId: string } | null = null;
-  private geofences: Geofence[] = [];
 
   private currentUser(): Promise<User | null> {
     return new Promise((resolve) => {
@@ -82,23 +73,7 @@ export class FirebaseBackend implements Backend {
   private async loadFamily(familyId: string): Promise<Family> {
     const snap = await getDoc(doc(db(), 'families', familyId));
     if (!snap.exists()) throw new Error('Famille introuvable.');
-    const fam = { id: snap.id, ...(snap.data() as Omit<Family, 'id'>) };
-    this.geofences = fam.geofences ?? [];
-    return fam;
-  }
-
-  private computeLive(m: Member, locs: Record<string, Location>): LiveMember {
-    const loc = m.sharing === 'off' ? undefined : locs[m.id];
-    const home = this.geofences.find((g) => g.kind === 'home');
-    if (!loc || !home) return { ...m, status: 'unknown', distanceMeters: Infinity };
-    const distance = haversine(loc.lat, loc.lng, home.lat, home.lng);
-    const zone = zoneFor(loc, this.geofences);
-    const status = zone?.kind === 'home' ? 'home' : statusFromDistance(distance, home.radius);
-    let etaMinutes: number | undefined;
-    if (loc.speed && loc.speed > 1 && status !== 'home') {
-      etaMinutes = distance / ((loc.speed * 1000) / 60);
-    }
-    return { ...m, location: loc, status, zone, distanceMeters: distance, etaMinutes };
+    return { id: snap.id, ...(snap.data() as Omit<Family, 'id'>) };
   }
 
   /* ── Auth / onboarding ───────────────────────────────────── */
@@ -144,7 +119,6 @@ export class FirebaseBackend implements Backend {
       birthDate: profile.birthDate,
       color: '#B98A57',
       initials: profile.name.trim().slice(0, 2),
-      sharing: role === 'minor' ? 'auto' : 'optin',
     };
     await setDoc(doc(db(), 'families', familyId, 'members', uid), member);
 
@@ -165,7 +139,7 @@ export class FirebaseBackend implements Backend {
     // 1. users/{uid} d'abord (les règles en dépendent).
     await setDoc(doc(db(), 'users', uid), { familyId, memberId: uid });
     // 2. la famille.
-    await setDoc(doc(db(), 'families', familyId), { id: familyId, name, geofences: [] });
+    await setDoc(doc(db(), 'families', familyId), { id: familyId, name });
     // 3. le créateur, responsable.
     const member: Member = {
       id: uid,
@@ -176,7 +150,6 @@ export class FirebaseBackend implements Backend {
       birthDate: profile.birthDate,
       color: '#C4623F',
       initials: profile.name.trim().slice(0, 2),
-      sharing: 'optin',
     };
     await setDoc(doc(db(), 'families', familyId, 'members', uid), member);
 
@@ -248,72 +221,6 @@ export class FirebaseBackend implements Backend {
 
   async revokeInvitation(id: string): Promise<void> {
     await deleteDoc(doc(db(), 'inviteCodes', id));
-  }
-
-  /* ── Localisation temps réel ─────────────────────────────── */
-  subscribeLive(cb: (members: LiveMember[]) => void): () => void {
-    let unsubs: Array<() => void> = [];
-    let cancelled = false;
-    let members: Member[] = [];
-    let locs: Record<string, Location> = {};
-    const recompute = () => cb(members.map((m) => this.computeLive(m, locs)));
-
-    this.resolveCtx()
-      .then(async ({ familyId }) => {
-        await this.loadFamily(familyId);
-        if (cancelled) return;
-        const u1 = onSnapshot(collection(db(), 'families', familyId, 'members'), (s) => {
-          members = s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Member, 'id'>) }));
-          recompute();
-        });
-        const u2 = onSnapshot(collection(db(), 'families', familyId, 'locations'), (s) => {
-          locs = {};
-          s.docs.forEach((d) => (locs[d.id] = d.data() as Location));
-          recompute();
-        });
-        // Les lieux (géorepères) peuvent changer en direct → on met à jour le cache.
-        const u3 = onSnapshot(doc(db(), 'families', familyId), (snap) => {
-          this.geofences = (snap.data() as { geofences?: Geofence[] } | undefined)?.geofences ?? [];
-          recompute();
-        });
-        unsubs = [u1, u2, u3];
-      })
-      .catch((e) => console.error('[firebase] subscribeLive', e));
-
-    return () => {
-      cancelled = true;
-      unsubs.forEach((u) => u());
-    };
-  }
-
-  async setSharing(memberId: string, mode: SharingMode): Promise<void> {
-    const { familyId } = await this.resolveCtx();
-    const snap = await getDoc(doc(db(), 'families', familyId, 'members', memberId));
-    const role = (snap.data() as Member | undefined)?.role;
-    if (role === 'minor' && mode !== 'auto') {
-      throw new Error('Le partage de localisation est obligatoire pour un compte mineur.');
-    }
-    await updateDoc(doc(db(), 'families', familyId, 'members', memberId), { sharing: mode });
-  }
-
-  async updateLocation({ lat, lng, speed, battery }: { lat: number; lng: number; speed?: number; battery?: number }): Promise<void> {
-    const { familyId, memberId } = await this.resolveCtx();
-    await setDoc(doc(db(), 'families', familyId, 'locations', memberId), {
-      memberId,
-      lat,
-      lng,
-      speed: speed ?? 0,
-      battery,
-      updatedAt: Date.now(),
-    });
-  }
-
-  async upsertGeofence({ kind, label, lat, lng, radius }: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }): Promise<void> {
-    const { familyId } = await this.resolveCtx();
-    const fam = await this.loadFamily(familyId);
-    const gf: Geofence = { id: `gf-${kind}`, kind, label, lat, lng, radius: radius ?? 120 };
-    const geofences = [...fam.geofences.filter((g) => g.kind !== kind), gf];
-    await updateDoc(doc(db(), 'families', familyId), { geofences });
   }
 
   /* ── Fil de souvenirs & événements ───────────────────────── */

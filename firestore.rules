@@ -1,8 +1,7 @@
 rules_version = '2';
 
 // Règles de sécurité Firestore — App familiale privée.
-// Principes : accès sur invitation, isolation par famille, partage de
-// localisation OBLIGATOIRE et non désactivable pour les mineurs.
+// Principes : accès sur invitation, isolation par famille.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -48,19 +47,11 @@ service cloud.firestore {
         // Création de sa propre fiche (après création de users/{uid}).
         allow create: if isMember(fid) && request.auth.uid == memberId;
 
-        // Mise à jour de soi-même ; un mineur ne peut JAMAIS désactiver le partage.
-        allow update: if isMember(fid)
-          && request.auth.uid == memberId
-          && !(resource.data.role == 'minor' && request.resource.data.sharing != 'auto');
+        // Mise à jour de sa propre fiche (prénom, lien de parenté, anniversaire).
+        allow update: if isMember(fid) && request.auth.uid == memberId;
 
         // L'admin gère (rôles, blocage, suppression).
         allow write: if isAdmin(fid);
-      }
-
-      match /locations/{memberId} {
-        allow read: if isMember(fid);
-        // Chacun n'écrit que sa propre position.
-        allow write: if isMember(fid) && request.auth.uid == memberId;
       }
 
       match /posts/{postId} {

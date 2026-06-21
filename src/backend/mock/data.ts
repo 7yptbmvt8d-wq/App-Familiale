@@ -1,57 +1,22 @@
 import type { Family, Invitation, Member, Post } from '../types';
 
-/* Coordonnées de référence (région lyonnaise) — uniquement pour la démo. */
-export const HOME = { lat: 45.764, lng: 4.8357 };
-export const SCHOOL = { lat: 45.7702, lng: 4.829 };
-export const WORK = { lat: 45.744, lng: 4.87 };
-
 export const FAMILY: Family = {
   id: 'fam-lacroix',
   name: 'Famille Lacroix',
-  geofences: [
-    { id: 'gf-home', label: 'Maison', kind: 'home', lat: HOME.lat, lng: HOME.lng, radius: 120 },
-    { id: 'gf-school', label: 'École', kind: 'school', lat: SCHOOL.lat, lng: SCHOOL.lng, radius: 150 },
-    { id: 'gf-work', label: 'Travail', kind: 'work', lat: WORK.lat, lng: WORK.lng, radius: 180 },
-  ],
 };
-
-/* ── Profils de simulation (mock uniquement) ─────────────────── */
-export type SimMode = 'home' | 'zone' | 'commute' | 'off';
-
-export interface SimProfile {
-  mode: SimMode;
-  anchor?: { lat: number; lng: number }; // home / zone : centre de marche aléatoire
-  from?: { lat: number; lng: number }; // commute : point extérieur
-  to?: { lat: number; lng: number }; // commute : destination (toujours la maison)
-  speedKmh?: number;
-  phase?: number; // 0 = extérieur, 1 = maison
-  dir?: 1 | -1;
-  battery: number;
-}
 
 const fam = FAMILY.id;
 
 export const SEED_MEMBERS: Member[] = [
-  { id: 'm-helene', familyId: fam, name: 'Hélène', role: 'admin', relation: 'Mère', birthDate: '1984-03-12', color: '#C4623F', initials: 'Hé', sharing: 'optin' },
-  { id: 'm-marc', familyId: fam, name: 'Marc', role: 'admin', relation: 'Père', birthDate: '1982-09-02', color: '#A24C32', initials: 'Ma', sharing: 'optin' },
-  { id: 'm-lea', familyId: fam, name: 'Léa', role: 'minor', relation: 'Fille · 14 ans', birthDate: '2012-05-21', color: '#C99A4E', initials: 'Lé', sharing: 'auto' },
-  { id: 'm-tom', familyId: fam, name: 'Tom', role: 'minor', relation: 'Fils · 11 ans', birthDate: '2015-01-08', color: '#7E8A6A', initials: 'To', sharing: 'auto' },
-  { id: 'm-jeanne', familyId: fam, name: 'Jeanne', role: 'adult', relation: 'Grand-mère', birthDate: '1955-11-30', color: '#B98A57', initials: 'Je', sharing: 'optin' },
-  { id: 'm-robert', familyId: fam, name: 'Robert', role: 'adult', relation: 'Grand-père', birthDate: '1953-06-17', color: '#8A6A4F', initials: 'Ro', sharing: 'off' },
-  { id: 'm-sofia', familyId: fam, name: 'Sofia', role: 'adult', relation: 'Cousine', birthDate: '1996-02-14', color: '#C4623F', initials: 'So', sharing: 'optin' },
-  { id: 'm-hugo', familyId: fam, name: 'Hugo', role: 'adult', relation: 'Oncle', birthDate: '1989-07-25', color: '#A24C32', initials: 'Hu', sharing: 'temporary' },
+  { id: 'm-helene', familyId: fam, name: 'Hélène', role: 'admin', relation: 'Mère', birthDate: '1984-03-12', color: '#C4623F', initials: 'Hé' },
+  { id: 'm-marc', familyId: fam, name: 'Marc', role: 'admin', relation: 'Père', birthDate: '1982-09-02', color: '#A24C32', initials: 'Ma' },
+  { id: 'm-lea', familyId: fam, name: 'Léa', role: 'minor', relation: 'Fille · 14 ans', birthDate: '2012-05-21', color: '#C99A4E', initials: 'Lé' },
+  { id: 'm-tom', familyId: fam, name: 'Tom', role: 'minor', relation: 'Fils · 11 ans', birthDate: '2015-01-08', color: '#7E8A6A', initials: 'To' },
+  { id: 'm-jeanne', familyId: fam, name: 'Jeanne', role: 'adult', relation: 'Grand-mère', birthDate: '1955-11-30', color: '#B98A57', initials: 'Je' },
+  { id: 'm-robert', familyId: fam, name: 'Robert', role: 'adult', relation: 'Grand-père', birthDate: '1953-06-17', color: '#8A6A4F', initials: 'Ro' },
+  { id: 'm-sofia', familyId: fam, name: 'Sofia', role: 'adult', relation: 'Cousine', birthDate: '1996-02-14', color: '#C4623F', initials: 'So' },
+  { id: 'm-hugo', familyId: fam, name: 'Hugo', role: 'adult', relation: 'Oncle', birthDate: '1989-07-25', color: '#A24C32', initials: 'Hu' },
 ];
-
-export const SEED_SIM: Record<string, SimProfile> = {
-  'm-helene': { mode: 'home', anchor: HOME, battery: 0.82 },
-  'm-marc': { mode: 'zone', anchor: WORK, battery: 0.54 },
-  'm-lea': { mode: 'zone', anchor: SCHOOL, battery: 0.39 },
-  'm-tom': { mode: 'zone', anchor: SCHOOL, battery: 0.71 },
-  'm-jeanne': { mode: 'home', anchor: HOME, battery: 0.93 },
-  'm-robert': { mode: 'off', battery: 0.6 },
-  'm-sofia': { mode: 'commute', from: { lat: 45.7665, lng: 4.8385 }, to: HOME, speedKmh: 5, phase: 0.45, dir: 1, battery: 0.66 },
-  'm-hugo': { mode: 'commute', from: WORK, to: HOME, speedKmh: 42, phase: 0.3, dir: 1, battery: 0.48 },
-};
 
 const now = Date.now();
 const H = 3_600_000;

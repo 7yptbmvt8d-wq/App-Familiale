@@ -10,41 +10,20 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 const PROJECT = 'demo-famille';
 const FAMILY = 'fam-lacroix';
-const HOME = { lat: 45.764, lng: 4.8357 };
-const SCHOOL = { lat: 45.7702, lng: 4.829 };
-const WORK = { lat: 45.744, lng: 4.87 };
 const now = Date.now();
 const H = 3_600_000;
 const D = 86_400_000;
 const thisYear = new Date().getFullYear();
 
-const geofences = [
-  { id: 'gf-home', label: 'Maison', kind: 'home', lat: HOME.lat, lng: HOME.lng, radius: 120 },
-  { id: 'gf-school', label: 'École', kind: 'school', lat: SCHOOL.lat, lng: SCHOOL.lng, radius: 150 },
-  { id: 'gf-work', label: 'Travail', kind: 'work', lat: WORK.lat, lng: WORK.lng, radius: 180 },
-];
-
 const members = [
-  { id: 'm-helene', name: 'Hélène', role: 'admin', relation: 'Mère', birthDate: '1984-03-12', color: '#C4623F', initials: 'Hé', sharing: 'optin' },
-  { id: 'm-marc', name: 'Marc', role: 'admin', relation: 'Père', birthDate: '1982-09-02', color: '#A24C32', initials: 'Ma', sharing: 'optin' },
-  { id: 'm-lea', name: 'Léa', role: 'minor', relation: 'Fille · 14 ans', birthDate: '2012-05-21', color: '#C99A4E', initials: 'Lé', sharing: 'auto' },
-  { id: 'm-tom', name: 'Tom', role: 'minor', relation: 'Fils · 11 ans', birthDate: '2015-01-08', color: '#7E8A6A', initials: 'To', sharing: 'auto' },
-  { id: 'm-jeanne', name: 'Jeanne', role: 'adult', relation: 'Grand-mère', birthDate: '1955-11-30', color: '#B98A57', initials: 'Je', sharing: 'optin' },
-  { id: 'm-robert', name: 'Robert', role: 'adult', relation: 'Grand-père', birthDate: '1953-06-17', color: '#8A6A4F', initials: 'Ro', sharing: 'off' },
-  { id: 'm-sofia', name: 'Sofia', role: 'adult', relation: 'Cousine', birthDate: '1996-02-14', color: '#C4623F', initials: 'So', sharing: 'optin' },
-  { id: 'm-hugo', name: 'Hugo', role: 'adult', relation: 'Oncle', birthDate: '1989-07-25', color: '#A24C32', initials: 'Hu', sharing: 'temporary' },
-];
-
-const loc = (id, lat, lng, battery, speed) => ({ memberId: id, lat, lng, updatedAt: now, battery, speed });
-const locations = [
-  loc('m-helene', HOME.lat, HOME.lng, 0.82, 0),
-  loc('m-marc', WORK.lat, WORK.lng, 0.54, 0),
-  loc('m-lea', SCHOOL.lat, SCHOOL.lng, 0.39, 0),
-  loc('m-tom', SCHOOL.lat, SCHOOL.lng, 0.71, 0),
-  loc('m-jeanne', HOME.lat, HOME.lng, 0.93, 0),
-  loc('m-sofia', 45.7655, 4.838, 0.66, 5),
-  loc('m-hugo', 45.752, 4.857, 0.48, 38),
-  // m-robert : partage désactivé → aucune position.
+  { id: 'm-helene', name: 'Hélène', role: 'admin', relation: 'Mère', birthDate: '1984-03-12', color: '#C4623F', initials: 'Hé' },
+  { id: 'm-marc', name: 'Marc', role: 'admin', relation: 'Père', birthDate: '1982-09-02', color: '#A24C32', initials: 'Ma' },
+  { id: 'm-lea', name: 'Léa', role: 'minor', relation: 'Fille · 14 ans', birthDate: '2012-05-21', color: '#C99A4E', initials: 'Lé' },
+  { id: 'm-tom', name: 'Tom', role: 'minor', relation: 'Fils · 11 ans', birthDate: '2015-01-08', color: '#7E8A6A', initials: 'To' },
+  { id: 'm-jeanne', name: 'Jeanne', role: 'adult', relation: 'Grand-mère', birthDate: '1955-11-30', color: '#B98A57', initials: 'Je' },
+  { id: 'm-robert', name: 'Robert', role: 'adult', relation: 'Grand-père', birthDate: '1953-06-17', color: '#8A6A4F', initials: 'Ro' },
+  { id: 'm-sofia', name: 'Sofia', role: 'adult', relation: 'Cousine', birthDate: '1996-02-14', color: '#C4623F', initials: 'So' },
+  { id: 'm-hugo', name: 'Hugo', role: 'adult', relation: 'Oncle', birthDate: '1989-07-25', color: '#A24C32', initials: 'Hu' },
 ];
 
 const posts = [
@@ -65,9 +44,8 @@ export async function seed() {
   db.settings({ ignoreUndefinedProperties: true });
 
   const batch = db.batch();
-  batch.set(db.doc(`families/${FAMILY}`), { id: FAMILY, name: 'Famille Lacroix', geofences });
+  batch.set(db.doc(`families/${FAMILY}`), { id: FAMILY, name: 'Famille Lacroix' });
   for (const m of members) batch.set(db.doc(`families/${FAMILY}/members/${m.id}`), { ...m, familyId: FAMILY });
-  for (const l of locations) batch.set(db.doc(`families/${FAMILY}/locations/${l.memberId}`), l);
   for (const p of posts) batch.set(db.doc(`families/${FAMILY}/posts/${p.id}`), { ...p, familyId: FAMILY });
   for (const c of inviteCodes)
     batch.set(db.doc(`inviteCodes/${c.code}`), {
@@ -82,7 +60,7 @@ export async function seed() {
     });
   await batch.commit();
 
-  console.log(`Seed OK : ${members.length} membres, ${locations.length} positions, ${posts.length} posts, ${inviteCodes.length} codes.`);
+  console.log(`Seed OK : ${members.length} membres, ${posts.length} posts, ${inviteCodes.length} codes.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

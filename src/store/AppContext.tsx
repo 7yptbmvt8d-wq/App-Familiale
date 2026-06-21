@@ -11,15 +11,12 @@ import { BACKEND_KIND, createBackend } from '../backend';
 import type {
   Backend,
   CreatePostInput,
-  GeofenceKind,
   Invitation,
-  LiveMember,
   Member,
   NewProfile,
   Post,
   Role,
   Session,
-  SharingMode,
 } from '../backend/types';
 
 interface AppValue {
@@ -27,7 +24,6 @@ interface AppValue {
   backendKind: 'mock' | 'firebase';
   session: Session | null;
   me: Member | null;
-  live: LiveMember[];
   feed: Post[];
   members: Member[];
   memberById: (id: string) => Member | undefined;
@@ -36,8 +32,6 @@ interface AppValue {
   createFamily: (familyName: string, profile: NewProfile) => Promise<void>;
   demoSignIn: (memberId: string) => Promise<void>;
   signOut: () => Promise<void>;
-  setSharing: (mode: SharingMode) => Promise<void>;
-  upsertGeofence: (input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }) => Promise<void>;
   createPost: (input: CreatePostInput) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   toggleFavorite: (postId: string) => Promise<void>;
@@ -57,7 +51,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const backendRef = useRef<Backend | null>(null);
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [live, setLive] = useState<LiveMember[]>([]);
   const [feed, setFeed] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -93,55 +86,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Abonnements temps réel une fois connecté.
+  // Abonnement au fil une fois connecté.
   const sessionMemberId = session?.member.id;
   useEffect(() => {
     const b = backendRef.current;
     if (!b || !sessionMemberId) {
-      setLive([]);
       setFeed([]);
       return;
     }
-    const u1 = b.subscribeLive(setLive);
-    const u2 = b.subscribeFeed(setFeed);
+    const u = b.subscribeFeed(setFeed);
     b.listMembers().then(setMembers).catch(() => {});
-    return () => {
-      u1();
-      u2();
-    };
+    return () => u();
   }, [sessionMemberId]);
 
-  // Partage de position (GPS du navigateur) tant que l'app est ouverte et le partage actif.
-  const mySharing = session?.member.sharing;
-  useEffect(() => {
-    if (!sessionMemberId || !mySharing || mySharing === 'off') return;
-    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    let last = 0;
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        const now = Date.now();
-        if (now - last < 20000) return; // au plus une écriture / 20 s
-        last = now;
-        const { latitude, longitude, speed } = pos.coords;
-        backendRef.current
-          ?.updateLocation({
-            lat: latitude,
-            lng: longitude,
-            speed: speed != null && speed >= 0 ? speed * 3.6 : undefined,
-          })
-          .catch(() => {});
-      },
-      () => {
-        /* permission refusée / indisponible : on ignore */
-      },
-      { enableHighAccuracy: false, maximumAge: 30000, timeout: 20000 },
-    );
-    return () => navigator.geolocation.clearWatch(id);
-  }, [sessionMemberId, mySharing]);
-
   const memberById = useCallback(
-    (id: string): Member | undefined => live.find((m) => m.id === id) ?? members.find((m) => m.id === id),
-    [live, members],
+    (id: string): Member | undefined => members.find((m) => m.id === id),
+    [members],
   );
 
   const join = useCallback(async (code: string, profile: NewProfile) => {
@@ -160,29 +120,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await backendRef.current!.signOut();
     setSession(null);
   }, []);
-
-  const setSharing = useCallback(
-    async (mode: SharingMode) => {
-      const me = session?.member;
-      if (!me) return;
-      await backendRef.current!.setSharing(me.id, mode);
-      setSession((prev) => (prev ? { ...prev, member: { ...prev.member, sharing: mode } } : prev));
-    },
-    [session?.member],
-  );
-
-  const upsertGeofence = useCallback(
-    async (input: { kind: GeofenceKind; label: string; lat: number; lng: number; radius?: number }) => {
-      await backendRef.current!.upsertGeofence(input);
-      setSession((prev) => {
-        if (!prev) return prev;
-        const others = prev.family.geofences.filter((g) => g.kind !== input.kind);
-        const gf = { id: `gf-${input.kind}`, ...input, radius: input.radius ?? 120 };
-        return { ...prev, family: { ...prev.family, geofences: [...others, gf] } };
-      });
-    },
-    [],
-  );
 
   const createPost = useCallback((input: CreatePostInput) => backendRef.current!.createPost(input), []);
   const deletePost = useCallback((postId: string) => backendRef.current!.deletePost(postId), []);
@@ -228,7 +165,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     backendKind: BACKEND_KIND,
     session,
     me: session?.member ?? null,
-    live,
     feed,
     members,
     memberById,
@@ -236,8 +172,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createFamily,
     demoSignIn,
     signOut,
-    setSharing,
-    upsertGeofence,
     createPost,
     deletePost,
     toggleFavorite,

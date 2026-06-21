@@ -3,7 +3,6 @@ import styles from './TabBar.module.css';
 
 const TABS = [
   { id: 'fil', label: 'Fil', icon: 'feed' },
-  { id: 'map', label: 'Carte', icon: 'pin' },
   { id: 'agenda', label: 'Agenda', icon: 'calendar' },
   { id: 'souvenirs', label: 'Souvenirs', icon: 'sparkle' },
   { id: 'famille', label: 'Famille', icon: 'tree' },
