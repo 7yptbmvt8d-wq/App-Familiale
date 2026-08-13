@@ -77,7 +77,7 @@ export class FirebaseBackend implements Backend {
     return { id: snap.id, ...(snap.data() as Omit<Family, 'id'>) };
   }
 
-  /* ── Auth / onboarding ───────────────────────────────────── */
+  /* Auth / onboarding */
   async getSession(): Promise<Session | null> {
     const user = await this.currentUser();
     if (!user) return null;
@@ -168,7 +168,7 @@ export class FirebaseBackend implements Backend {
     await fbSignOut(auth());
   }
 
-  /* ── Famille ─────────────────────────────────────────────── */
+  /* Famille */
   async getFamily(): Promise<Family> {
     const { familyId } = await this.resolveCtx();
     return this.loadFamily(familyId);
@@ -192,7 +192,7 @@ export class FirebaseBackend implements Backend {
     if (Object.keys(data).length) await updateDoc(doc(db(), 'families', familyId, 'members', memberId), data);
   }
 
-  /* ── Invitations ─────────────────────────────────────────── */
+  /* Invitations */
   async listInvitations(): Promise<Invitation[]> {
     const { familyId } = await this.resolveCtx();
     const snap = await getDocs(query(collection(db(), 'inviteCodes'), where('familyId', '==', familyId)));
@@ -224,7 +224,7 @@ export class FirebaseBackend implements Backend {
     await deleteDoc(doc(db(), 'inviteCodes', id));
   }
 
-  /* ── Fil de souvenirs & événements ───────────────────────── */
+  /* Fil de souvenirs & événements */
   subscribeFeed(cb: (posts: Post[]) => void): () => void {
     let unsub = () => {};
     let cancelled = false;
@@ -254,6 +254,11 @@ export class FirebaseBackend implements Backend {
   async createPost(input: CreatePostInput): Promise<void> {
     const { familyId, memberId } = await this.resolveCtx();
     const imageUrl = await this.uploadIfDataUrl(familyId, input.imageUrl);
+    const imageUrls = input.imageUrls
+      ? (await Promise.all(input.imageUrls.map((u) => this.uploadIfDataUrl(familyId, u)))).filter(
+          (u): u is string => !!u,
+        )
+      : undefined;
     const post: Omit<Post, 'id'> = {
       familyId,
       authorId: memberId,
@@ -261,6 +266,7 @@ export class FirebaseBackend implements Backend {
       text: input.text,
       caption: input.caption,
       imageUrl,
+      imageUrls,
       tilt: input.type === 'photo' || input.type === 'memory' ? Math.random() * 7 - 3.5 : 0,
       createdAt: Date.now(),
       memoryDate: input.memoryDate,
@@ -312,7 +318,7 @@ export class FirebaseBackend implements Backend {
     await deleteDoc(doc(db(), 'families', familyId, 'posts', postId));
   }
 
-  /* ── Notifications push (FCM) ────────────────────────────── */
+  /* Notifications push (FCM) */
   async savePushToken(token: string): Promise<void> {
     const user = await this.currentUser();
     if (!user) return;
