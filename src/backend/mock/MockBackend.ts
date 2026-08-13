@@ -44,7 +44,7 @@ export class MockBackend implements Backend {
     this.sessionMemberId = loaded?.sessionMemberId ?? null;
   }
 
-  /* ── Persistance ─────────────────────────────────────────── */
+  /* Persistance */
   private load(): PersistShape | null {
     try {
       const raw = localStorage.getItem(STORE_KEY);
@@ -88,7 +88,7 @@ export class MockBackend implements Backend {
     return m;
   }
 
-  /* ── Auth / onboarding ───────────────────────────────────── */
+  /* Auth / onboarding */
   async getSession(): Promise<Session | null> {
     const m = this.members.find((x) => x.id === this.sessionMemberId);
     return m ? { member: m, family: this.family } : null;
@@ -158,7 +158,7 @@ export class MockBackend implements Backend {
     this.save();
   }
 
-  /* ── Famille ─────────────────────────────────────────────── */
+  /* Famille */
   async getFamily(): Promise<Family> {
     return this.family;
   }
@@ -179,7 +179,7 @@ export class MockBackend implements Backend {
     this.save();
   }
 
-  /* ── Invitations ─────────────────────────────────────────── */
+  /* Invitations */
   async listInvitations(): Promise<Invitation[]> {
     return [...this.invitations].sort((a, b) => b.createdAt - a.createdAt);
   }
@@ -207,7 +207,7 @@ export class MockBackend implements Backend {
     this.save();
   }
 
-  /* ── Fil de souvenirs & événements ───────────────────────── */
+  /* Fil de souvenirs & événements */
   subscribeFeed(cb: (posts: Post[]) => void): () => void {
     this.feedSubs.add(cb);
     cb(this.feedSnapshot());
@@ -224,6 +224,7 @@ export class MockBackend implements Backend {
       text: input.text,
       caption: input.caption,
       imageUrl: input.imageUrl,
+      imageUrls: input.imageUrls,
       tilt: input.type === 'photo' || input.type === 'memory' ? Math.random() * 7 - 3.5 : 0,
       createdAt: Date.now(),
       memoryDate: input.memoryDate,
@@ -283,7 +284,7 @@ export class MockBackend implements Backend {
     this.emitFeed();
   }
 
-  /* ── Notifications push (sans effet en démo locale) ──────── */
+  /* Notifications push (sans effet en démo locale) */
   async savePushToken(): Promise<void> {
     /* Le mock n'envoie pas de push ; no-op. */
   }

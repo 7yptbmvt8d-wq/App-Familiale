@@ -113,7 +113,7 @@ export function FeedItem({ post }: { post: Post }) {
     </div>
   );
 
-  /* ── Souvenir (mémoire) ─────────────────────────────────── */
+  /* Souvenir (mémoire) */
   if (post.type === 'memory') {
     return (
       <article className={`${styles.card} ${styles.memory}`}>
@@ -137,7 +137,7 @@ export function FeedItem({ post }: { post: Post }) {
     );
   }
 
-  /* ── Événement (ticket) ─────────────────────────────────── */
+  /* Événement (ticket) */
   if (post.type === 'event') {
     return (
       <article className={`${styles.card} ${styles.ticket}`}>
@@ -166,14 +166,40 @@ export function FeedItem({ post }: { post: Post }) {
     );
   }
 
-  /* ── Photo (polaroïd) ───────────────────────────────────── */
+  /* Photo (polaroïd unique ou album) */
   if (post.type === 'photo') {
+    const photos = post.imageUrls?.length ? post.imageUrls : post.imageUrl ? [post.imageUrl] : [];
+
+    if (photos.length > 1) {
+      return (
+        <article className={styles.card}>
+          {header}
+          <div className={styles.galleryWrap}>
+            <div className={styles.gallery}>
+              {photos.map((src, i) => (
+                <div key={i} className={styles.slide}>
+                  <PhotoPlaceholder imageUrl={src} ratio={1.1} />
+                </div>
+              ))}
+            </div>
+            <span className={styles.galleryBadge}>
+              <Icon name="photo" size={13} /> {photos.length}
+            </span>
+          </div>
+          {post.caption && <p className={styles.galleryCap}>{post.caption}</p>}
+          {post.text && <p className={styles.galleryText}>{post.text}</p>}
+          {actions}
+          {comments}
+        </article>
+      );
+    }
+
     return (
       <article className={styles.card}>
         {header}
         <div className={styles.polaroid} style={{ transform: `rotate(${post.tilt ?? 2}deg)` }}>
           <span className={`${styles.tape} ${styles.tapeR}`} />
-          <PhotoPlaceholder caption={post.caption} imageUrl={post.imageUrl} ratio={1.15} />
+          <PhotoPlaceholder caption={post.caption} imageUrl={photos[0]} ratio={1.15} />
           {post.text && <p className={styles.handwritten}>{post.text}</p>}
         </div>
         {actions}
@@ -182,7 +208,7 @@ export function FeedItem({ post }: { post: Post }) {
     );
   }
 
-  /* ── Récit (texte) ──────────────────────────────────────── */
+  /* Récit (texte) */
   return (
     <article className={`${styles.card} ${styles.note}`}>
       {header}
