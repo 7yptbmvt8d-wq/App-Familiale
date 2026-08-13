@@ -10,6 +10,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
 import { chromium } from 'playwright';
+import { pixelFiles } from './pixel.mjs';
 import { seed } from '../scripts/seed-emulator.mjs';
 
 const PORT = 4174;
@@ -124,6 +125,16 @@ try {
   await fbPost2.getByRole('button', { name: 'Supprimer' }).click();
   await fbPost2.waitFor({ state: 'detached', timeout: 10000 });
   await shot('06d-delete');
+
+  // Publier un album → upload de plusieurs photos sur Storage (émulateur) puis
+  // retour via onSnapshot avec les URLs de téléchargement.
+  await page.getByRole('button', { name: /Partager un souvenir/ }).click();
+  await page.locator('input[type="file"]').setInputFiles(pixelFiles(2));
+  await page.getByText(/2 photos/).waitFor({ timeout: 10000 });
+  await page.getByPlaceholder("étretat · falaise d'aval").fill('album firestore (test)');
+  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
+  await page.locator('article').filter({ hasText: 'album firestore' }).first().waitFor({ timeout: 15000 });
+  await shot('06e-album');
 
   // Créer une NOUVELLE famille (Auth anonyme + création famille/membre sous les règles)
   const ctx2 = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2 });
