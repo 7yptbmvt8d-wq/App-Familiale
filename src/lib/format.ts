@@ -31,6 +31,13 @@ export function formatTime(ts: number): string {
   return `${d.getHours()}h${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
+/** Début du jour courant (00:00) en ms — un événement disparaît le lendemain. */
+export function startOfToday(now = Date.now()): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
 /** Date longue capitalisée pour les en-têtes (« Vendredi 20 juin »). */
 export function headerDate(ts = Date.now()): string {
   const d = new Date(ts);

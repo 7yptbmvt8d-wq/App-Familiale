@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icon';
-import { headerDate } from '../../lib/format';
+import { headerDate, startOfToday } from '../../lib/format';
 import { useApp } from '../../store/AppContext';
 import { SettingsSheet } from '../settings/SettingsSheet';
 import { Composer } from './Composer';
@@ -13,7 +13,13 @@ export function FilScreen() {
   const [settings, setSettings] = useState(false);
 
   const memory = useMemo(() => feed.find((p) => p.type === 'memory'), [feed]);
-  const timeline = useMemo(() => feed.filter((p) => p.id !== memory?.id), [feed, memory]);
+  // Le fil masque les événements passés (ils disparaissent le lendemain).
+  const timeline = useMemo(() => {
+    const cutoff = startOfToday();
+    return feed.filter(
+      (p) => p.id !== memory?.id && !(p.type === 'event' && p.eventDate && p.eventDate < cutoff),
+    );
+  }, [feed, memory]);
 
   return (
     <div className={styles.screen}>

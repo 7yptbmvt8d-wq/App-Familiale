@@ -33,7 +33,8 @@ export interface Post {
   type: PostType;
   text?: string;
   caption?: string; // légende monospace du placeholder photo
-  imageUrl?: string; // photo réelle (Storage) ou data URL (mock)
+  imageUrl?: string; // photo unique (rétrocompat) — voir imageUrls
+  imageUrls?: string[]; // album : plusieurs photos (Storage) ou data URLs (mock)
   tilt?: number; // inclinaison du polaroïd (deg)
   createdAt: number; // date de publication
   memoryDate?: number; // date du souvenir (« quand c'était »), si différente
@@ -76,6 +77,7 @@ export interface CreatePostInput {
   text?: string;
   caption?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   memoryDate?: number;
   eventDate?: number;
   eventLocation?: string;

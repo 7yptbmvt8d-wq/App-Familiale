@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Icon } from '../../components/Icon';
 import { Avatar } from '../../components/Avatar';
-import { formatTime } from '../../lib/format';
+import { formatTime, startOfToday } from '../../lib/format';
 import { useApp } from '../../store/AppContext';
 import styles from './AgendaScreen.module.css';
 
@@ -18,10 +18,12 @@ function nextBirthday(iso: string): Date {
 export function AgendaScreen() {
   const { feed, members, memberById } = useApp();
 
-  const events = useMemo(
-    () => feed.filter((p) => p.type === 'event' && p.eventDate).sort((a, b) => a.eventDate! - b.eventDate!),
-    [feed],
-  );
+  const events = useMemo(() => {
+    const cutoff = startOfToday();
+    return feed
+      .filter((p) => p.type === 'event' && p.eventDate && p.eventDate >= cutoff)
+      .sort((a, b) => a.eventDate! - b.eventDate!);
+  }, [feed]);
 
   const birthdays = useMemo(
     () =>
