@@ -11,6 +11,7 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
 import { chromium } from 'playwright';
+import { pixelFiles } from './pixel.mjs';
 
 const PORT = 4173;
 const BASE = `http://localhost:${PORT}`;
@@ -108,6 +109,15 @@ try {
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.locator('article').filter({ hasText: 'souvenir révisé' }).first().waitFor({ timeout: 8000 });
   await shot('07b-edit-post');
+
+  // Publier un album : plusieurs photos, chacune optimisée avant envoi
+  await page.getByRole('button', { name: /Partager un souvenir/ }).click();
+  await page.locator('input[type="file"]').setInputFiles(pixelFiles(3));
+  await page.getByText(/3 photos/).waitFor({ timeout: 8000 });
+  await page.getByPlaceholder("étretat · falaise d'aval").fill('album des vacances (test)');
+  await page.getByRole('button', { name: 'Ajouter au fil' }).click();
+  await page.locator('article').filter({ hasText: 'album des vacances' }).first().waitFor({ timeout: 8000 });
+  await shot('07c-album');
 
   // Publier un événement
   await page.getByRole('button', { name: /Partager un souvenir/ }).click();
