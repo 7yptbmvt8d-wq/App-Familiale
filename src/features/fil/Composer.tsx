@@ -13,12 +13,15 @@ const KINDS: { id: Kind; label: string }[] = [
   { id: 'event', label: 'Événement' },
 ];
 
+const MAX_PHOTOS = 10;
+
 export function Composer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { createPost } = useApp();
   const [kind, setKind] = useState<Kind>('photo');
   const [text, setText] = useState('');
   const [caption, setCaption] = useState('');
-  const [image, setImage] = useState<string | undefined>();
+  const [images, setImages] = useState<string[]>([]);
+  const [optimizing, setOptimizing] = useState(false);
   const [memoryDate, setMemoryDate] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
@@ -29,7 +32,7 @@ export function Composer({ open, onClose }: { open: boolean; onClose: () => void
     setKind('photo');
     setText('');
     setCaption('');
-    setImage(undefined);
+    setImages([]);
     setMemoryDate('');
     setEventDate('');
     setEventLocation('');
@@ -39,20 +42,26 @@ export function Composer({ open, onClose }: { open: boolean; onClose: () => void
     onClose();
   };
 
-  const pickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const pickImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ''; // permet de re-choisir les mêmes fichiers
+    if (!files.length) return;
+    const room = MAX_PHOTOS - images.length;
+    if (room <= 0) return;
+    setOptimizing(true);
     try {
-      setImage(await resizeImage(f));
-    } catch {
-      /* fichier illisible : on ignore */
+      // Chaque photo est redimensionnée + compressée avant stockage.
+      const resized = await Promise.all(files.slice(0, room).map((f) => resizeImage(f).catch(() => null)));
+      setImages((prev) => [...prev, ...resized.filter((x): x is string => !!x)]);
+    } finally {
+      setOptimizing(false);
     }
   };
 
+  const removeImage = (i: number) => setImages((prev) => prev.filter((_, idx) => idx !== i));
+
   const canSubmit =
-    kind === 'photo'
-      ? !!(image || caption.trim() || text.trim())
-      : text.trim().length > 0;
+    kind === 'photo' ? !!(images.length || caption.trim() || text.trim()) : text.trim().length > 0;
 
   const submit = async () => {
     if (!canSubmit || busy) return;
@@ -62,7 +71,7 @@ export function Composer({ open, onClose }: { open: boolean; onClose: () => void
         type: kind,
         text: text.trim() || undefined,
         caption: kind === 'photo' ? caption.trim() || undefined : undefined,
-        imageUrl: kind === 'photo' ? image : undefined,
+        imageUrls: kind === 'photo' && images.length ? images : undefined,
         memoryDate: kind !== 'event' && memoryDate ? new Date(memoryDate).getTime() : undefined,
         eventDate: kind === 'event' && eventDate ? new Date(eventDate).getTime() : undefined,
         eventLocation: kind === 'event' ? eventLocation.trim() || undefined : undefined,
@@ -89,19 +98,45 @@ export function Composer({ open, onClose }: { open: boolean; onClose: () => void
 
       {kind === 'photo' && (
         <>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickImage} />
-          <button
-            type="button"
-            className={styles.photoBox}
-            onClick={() => fileRef.current?.click()}
-            style={image ? { backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-          >
-            {!image && (
+          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={pickImages} />
+          {images.length === 0 ? (
+            <button type="button" className={styles.photoBox} onClick={() => fileRef.current?.click()}>
               <span className={styles.photoHint}>
-                <Icon name="camera" size={20} /> Ajouter une photo
+                <Icon name="camera" size={20} /> {optimizing ? 'Optimisation…' : 'Ajouter des photos'}
               </span>
-            )}
-          </button>
+            </button>
+          ) : (
+            <div className={styles.thumbs}>
+              {images.map((src, i) => (
+                <div key={i} className={styles.thumb} style={{ backgroundImage: `url(${src})` }}>
+                  <button
+                    type="button"
+                    className={styles.thumbDel}
+                    onClick={() => removeImage(i)}
+                    aria-label="Retirer la photo"
+                  >
+                    <Icon name="close" size={13} stroke={2.4} />
+                  </button>
+                </div>
+              ))}
+              {images.length < MAX_PHOTOS && (
+                <button
+                  type="button"
+                  className={styles.addTile}
+                  onClick={() => fileRef.current?.click()}
+                  aria-label="Ajouter des photos"
+                >
+                  <Icon name="plus" size={20} />
+                  <span>{optimizing ? '…' : 'Ajouter'}</span>
+                </button>
+              )}
+            </div>
+          )}
+          {images.length > 0 && (
+            <p className={styles.photoCount}>
+              {images.length} photo{images.length > 1 ? 's' : ''} · optimisée{images.length > 1 ? 's' : ''} pour un envoi léger
+            </p>
+          )}
           <label className={styles.label}>Légende</label>
           <input className={styles.input} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="étretat · falaise d'aval" />
           <label className={styles.label}>Le récit (optionnel)</label>
@@ -141,7 +176,7 @@ export function Composer({ open, onClose }: { open: boolean; onClose: () => void
         </>
       )}
 
-      <button className={styles.submit} disabled={!canSubmit || busy} onClick={submit}>
+      <button className={styles.submit} disabled={!canSubmit || busy || optimizing} onClick={submit}>
         {busy ? 'Publication…' : 'Ajouter au fil'}
       </button>
     </Sheet>

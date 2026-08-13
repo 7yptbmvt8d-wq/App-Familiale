@@ -7,7 +7,7 @@
   animation: fam-rise 0.4s ease both;
 }
 
-/* ── En-tête auteur ─────────────────────────────────────── */
+/* En-tête auteur */
 .author {
   display: flex;
   align-items: center;
@@ -36,7 +36,7 @@
   white-space: nowrap;
 }
 
-/* ── Polaroïd ───────────────────────────────────────────── */
+/* Polaroïd */
 .polaroid {
   position: relative;
   background: var(--card-2);
@@ -71,7 +71,61 @@
   margin-top: 10px;
 }
 
-/* ── Actions (favori / commentaire) ─────────────────────── */
+/* Album (plusieurs photos) */
+.galleryWrap {
+  position: relative;
+  margin: 12px 0 4px;
+}
+.gallery {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.gallery::-webkit-scrollbar {
+  display: none;
+}
+.slide {
+  flex: 0 0 82%;
+  scroll-snap-align: center;
+}
+.slide > div {
+  border-radius: var(--r-polaroid);
+  box-shadow: var(--sh-polaroid);
+  overflow: hidden;
+}
+.galleryBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(36, 30, 26, 0.66);
+  color: #fbf6ee;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  z-index: 2;
+  pointer-events: none;
+}
+.galleryCap {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-meta);
+  margin: 2px 2px 0;
+}
+.galleryText {
+  font-size: 14px;
+  color: var(--ink);
+  margin: 6px 2px 0;
+}
+
+/* Actions (favori / commentaire) */
 .actions {
   display: flex;
   gap: 8px;
@@ -111,7 +165,7 @@
   opacity: 0.5;
 }
 
-/* ── Commentaires ───────────────────────────────────────── */
+/* Commentaires */
 .comments {
   margin-top: 10px;
   border-top: 1px solid var(--border-2);
@@ -156,7 +210,7 @@
   flex: none;
 }
 
-/* ── Souvenir (mémoire) ─────────────────────────────────── */
+/* Souvenir (mémoire) */
 .memory {
   background: linear-gradient(180deg, #f6ecdc, #f1e4d0);
   border-color: var(--border);
@@ -187,7 +241,7 @@
   margin-top: 0;
 }
 
-/* ── Ticket événement ───────────────────────────────────── */
+/* Ticket événement */
 .ticket {
   display: flex;
   padding: 0;
@@ -227,7 +281,7 @@
   color: var(--ocre);
 }
 
-/* ── Note texte ─────────────────────────────────────────── */
+/* Note texte */
 .note {
   background: var(--card-2);
 }

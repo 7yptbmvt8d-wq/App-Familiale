@@ -78,6 +78,51 @@
   border-radius: 999px;
 }
 
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--sh-card);
+}
+.thumbDel {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(36, 30, 26, 0.72);
+  color: #fbf6ee;
+  display: grid;
+  place-items: center;
+}
+.addTile {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: var(--sand-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+.photoCount {
+  font-size: 12px;
+  color: var(--text-meta);
+  margin: 8px 2px 0;
+}
+
 .submit {
   width: 100%;
   margin-top: 18px;
