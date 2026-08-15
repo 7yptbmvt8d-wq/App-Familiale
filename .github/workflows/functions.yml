@@ -1,0 +1,36 @@
+name: Déployer les Cloud Functions (notifications)
+
+# Déploie les fonctions de notifications + l'index Firestore sur le projet
+# Firebase de la famille, authentifié par un compte de service (secret GitHub
+# FIREBASE_SERVICE_ACCOUNT). Aucun terminal requis.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/awesome-cerf-rg1uvo]
+    paths:
+      - 'functions/**'
+      - 'firestore.indexes.json'
+      - 'firebase.json'
+      - '.github/workflows/functions.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer les dépendances des fonctions
+        run: npm install
+        working-directory: functions
+      - name: Authentification Google Cloud (compte de service)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Déployer les fonctions + l'index Firestore
+        run: npx --yes firebase-tools@13 deploy --only functions,firestore:indexes --project app-famille-bd0ae --force
